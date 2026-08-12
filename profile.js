@@ -520,14 +520,12 @@ window.addEventListener('load', async function() {
   }
 
   function initFavoriteBulkActions(userId) {
-    var toggleBtn     = document.querySelector('[wized="favorites-bulk-toggle"]');
-    var bulkContent   = document.querySelector('[wized="favorites-bulk-content"]');
-    var applyBtn      = document.querySelector('[wized="favorites-bulk-apply"]');
-    var removeRadio   = document.querySelector('[wized="favorites-bulk-remove"]');
-    var bulkActionsEl = document.querySelector('[wized="favorites-bulk-actions"]');
+    var toggleBtn   = document.querySelector('[wized="favorites-bulk-toggle"]');
+    var bulkContent = document.querySelector('[wized="favorites-bulk-content"]');
+    var applyBtn    = document.querySelector('[wized="favorites-bulk-apply"]');
+    var removeRadio = document.querySelector('[wized="favorites-bulk-remove"]');
 
-    if (bulkActionsEl) bulkActionsEl.style.setProperty('display', 'none', 'important');
-    if (bulkContent)   bulkContent.style.setProperty('display', 'none', 'important');
+    if (bulkContent) bulkContent.style.setProperty('display', 'none', 'important');
 
     var _bulkOpen = false;
 
@@ -557,14 +555,7 @@ window.addEventListener('load', async function() {
     window._favoriteBulkActions = {
       openBulkPanel:  openBulkPanel,
       closeBulkPanel: closeBulkPanel,
-      hasAnyChecked:  hasAnyChecked,
-      showBulkActions: function() {
-        if (bulkActionsEl) bulkActionsEl.style.setProperty('display', 'block', 'important');
-      },
-      hideBulkActions: function() {
-        if (bulkActionsEl) bulkActionsEl.style.setProperty('display', 'none', 'important');
-        closeBulkPanel();
-      }
+      hasAnyChecked:  hasAnyChecked
     };
 
     if (!applyBtn) return;
@@ -610,10 +601,12 @@ window.addEventListener('load', async function() {
 
             var listEl    = document.querySelector('[wized="favorites-list"]');
             var remaining = listEl ? listEl.querySelectorAll('[data-favorite-recipe-id]') : [];
+            var bulkActionsEl = document.querySelector('[wized="favorites-bulk-actions"]');
+
             if (remaining.length === 0) {
               var emptyEl = document.querySelector('[wized="favorites-empty"]');
               if (emptyEl) emptyEl.style.setProperty('display', 'block', 'important');
-              if (window._favoriteBulkActions) window._favoriteBulkActions.hideBulkActions();
+              if (bulkActionsEl) bulkActionsEl.style.setProperty('display', 'none', 'important');
             }
 
             if (removeRadio) removeRadio.checked = false;
@@ -1047,8 +1040,12 @@ window.addEventListener('load', async function() {
     var emptyEl          = document.querySelector('[wized="favorites-empty"]');
     var seeMoreBtn       = document.querySelector('[wized="favorites-see-more-btn"]');
     var seeLessBtn       = document.querySelector('[wized="favorites-see-less-btn"]');
+    var bulkActionsEl    = document.querySelector('[wized="favorites-bulk-actions"]');
 
     if (!listEl || !templateEl) return;
+
+    // Hide bulk actions at start — only shown if favorites exist
+    if (bulkActionsEl) bulkActionsEl.style.setProperty('display', 'none', 'important');
 
     templateEl.style.setProperty('display', 'none', 'important');
     if (drawerTemplateEl) drawerTemplateEl.style.setProperty('display', 'none', 'important');
@@ -1076,7 +1073,8 @@ window.addEventListener('load', async function() {
       return;
     }
 
-    if (window._favoriteBulkActions) window._favoriteBulkActions.showBulkActions();
+    // Favorites exist — show bulk actions
+    if (bulkActionsEl) bulkActionsEl.style.setProperty('display', 'block', 'important');
 
     var { data: allCommunityNotes } = await _supabase
       .from('notes')
