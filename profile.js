@@ -82,10 +82,11 @@ window.addEventListener('load', async function() {
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhvdW9ob2JhZHNlbGtzd2F4d3N5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxMTM0NTIsImV4cCI6MjA4OTY4OTQ1Mn0.hOBki3aRyTqOFy3CJZmrNBBULDoRxb9xRjz8iDUEMjo'
   );
 
-  var _editMode          = false;
-  var _selectedAvatar    = null;
-  var _selectedRecipeIds = {};
-  var _drawersByRecipeId = {};
+  var _editMode           = false;
+  var _selectedAvatar     = null;
+  var _selectedRecipeIds  = {};
+  var _selectedFavoriteIds = {};
+  var _drawersByRecipeId  = {};
 
   var SOCIAL_URL_MAP = {
     instagram: function(h) { return 'https://instagram.com/' + h; },
@@ -518,6 +519,110 @@ window.addEventListener('load', async function() {
     });
   }
 
+  function initFavoriteBulkActions(userId) {
+    var toggleBtn     = document.querySelector('[wized="favorites-bulk-toggle"]');
+    var bulkContent   = document.querySelector('[wized="favorites-bulk-content"]');
+    var applyBtn      = document.querySelector('[wized="favorites-bulk-apply"]');
+    var removeRadio   = document.querySelector('[wized="favorites-bulk-remove"]');
+    var bulkActionsEl = document.querySelector('[wized="favorites-bulk-actions"]');
+
+    if (bulkActionsEl) bulkActionsEl.style.setProperty('display', 'none', 'important');
+    if (bulkContent)   bulkContent.style.setProperty('display', 'none', 'important');
+
+    var _bulkOpen = false;
+
+    function openBulkPanel() {
+      if (!bulkContent || _bulkOpen) return;
+      _bulkOpen = true;
+      bulkContent.style.setProperty('display', 'flex', 'important');
+      if (toggleBtn) toggleBtn.style.transform = 'rotate(180deg)';
+    }
+    function closeBulkPanel() {
+      if (!bulkContent || !_bulkOpen) return;
+      _bulkOpen = false;
+      bulkContent.style.setProperty('display', 'none', 'important');
+      if (toggleBtn) toggleBtn.style.transform = '';
+    }
+    function hasAnyChecked() {
+      return Object.values(_selectedFavoriteIds).some(function(v) { return v === true; });
+    }
+
+    if (toggleBtn) {
+      toggleBtn.addEventListener('click', function() {
+        if (_bulkOpen) closeBulkPanel();
+        else openBulkPanel();
+      });
+    }
+
+    window._favoriteBulkActions = {
+      openBulkPanel:  openBulkPanel,
+      closeBulkPanel: closeBulkPanel,
+      hasAnyChecked:  hasAnyChecked,
+      showBulkActions: function() {
+        if (bulkActionsEl) bulkActionsEl.style.setProperty('display', 'block', 'important');
+      },
+      hideBulkActions: function() {
+        if (bulkActionsEl) bulkActionsEl.style.setProperty('display', 'none', 'important');
+        closeBulkPanel();
+      }
+    };
+
+    if (!applyBtn) return;
+
+    applyBtn.addEventListener('click', async function() {
+      var selectedIds = Object.keys(_selectedFavoriteIds).filter(function(id) {
+        return _selectedFavoriteIds[id] === true;
+      });
+      if (selectedIds.length === 0) { alert('Please select at least one recipe.'); return; }
+
+      var isRemove = removeRadio && removeRadio.checked;
+      if (!isRemove) { alert('Please select an action.'); return; }
+
+      var confirmed = confirm(
+        'Remove ' + selectedIds.length +
+        ' recipe' + (selectedIds.length > 1 ? 's' : '') + ' from your favorites?'
+      );
+      if (!confirmed) return;
+
+      applyBtn.style.opacity       = '0.5';
+      applyBtn.style.pointerEvents = 'none';
+
+      try {
+        var { error: removeError } = await _supabase
+          .from('favorites')
+          .delete()
+          .in('recipe_id', selectedIds)
+          .eq('user_id', userId);
+
+        if (removeError) {
+          alert('Could not remove favorites. Please try again.');
+        } else {
+          selectedIds.forEach(function(id) {
+            var wrapper = document.querySelector('[data-favorite-recipe-id="' + id + '"]');
+            if (wrapper) wrapper.remove();
+          });
+          _selectedFavoriteIds = {};
+
+          var listEl    = document.querySelector('[wized="favorites-list"]');
+          var remaining = listEl ? listEl.querySelectorAll('[data-favorite-recipe-id]') : [];
+          if (remaining.length === 0) {
+            var emptyEl = document.querySelector('[wized="favorites-empty"]');
+            if (emptyEl) emptyEl.style.setProperty('display', 'block', 'important');
+            if (window._favoriteBulkActions) window._favoriteBulkActions.hideBulkActions();
+          }
+
+          if (removeRadio) removeRadio.checked = false;
+          closeBulkPanel();
+        }
+      } catch(err) {
+        alert('Something went wrong. Please try again.');
+      } finally {
+        applyBtn.style.opacity       = '';
+        applyBtn.style.pointerEvents = '';
+      }
+    });
+  }
+
   // ── Shared note population functions ──────────────────────────────────────
 
   function populatePinnedNote(drawer, recipe) {
@@ -724,7 +829,7 @@ window.addEventListener('load', async function() {
     });
   }
 
-  // ── Load recipes + notes together ─────────────────────────────────────────
+  // ── Load recipes ───────────────────────────────────────────────────────────
 
   async function loadProfileRecipes(userId) {
     var listEl           = document.querySelector('[wized="recipes-list"]');
@@ -969,6 +1074,9 @@ window.addEventListener('load', async function() {
       return;
     }
 
+    // Show bulk actions now that favorites have loaded
+    if (window._favoriteBulkActions) window._favoriteBulkActions.showBulkActions();
+
     var { data: allCommunityNotes } = await _supabase
       .from('notes')
       .select('*')
@@ -1023,6 +1131,19 @@ window.addEventListener('load', async function() {
       if (base)   base.textContent   = toTitleCase(recipe.base_pairing || '');
       if (flavor) flavor.textContent = formatFlavor(recipe.flavor_profile);
 
+      // Wire favorites checkbox for bulk actions
+      var favCheckbox = card.querySelector('[wized="favorites-checkbox"]');
+      if (favCheckbox) {
+        favCheckbox.addEventListener('change', function() {
+          _selectedFavoriteIds[recipe.id] = favCheckbox.checked;
+          if (window._favoriteBulkActions) {
+            if (favCheckbox.checked) window._favoriteBulkActions.openBulkPanel();
+            else if (!window._favoriteBulkActions.hasAnyChecked()) window._favoriteBulkActions.closeBulkPanel();
+          }
+        });
+      }
+
+      // Hide uploads-style checkbox and edit btn
       if (checkbox) checkbox.style.setProperty('display', 'none', 'important');
       if (editBtn)  editBtn.style.setProperty('display', 'none', 'important');
 
@@ -1159,6 +1280,7 @@ window.addEventListener('load', async function() {
     initAvatarModal(profile, session.user.id);
     initPanelTabs();
     initBulkActions(session.user.id);
+    initFavoriteBulkActions(session.user.id);
     await finishLoading();
     await loadProfileRecipes(session.user.id);
     await loadFavoriteRecipes(session.user.id);
