@@ -82,11 +82,11 @@ window.addEventListener('load', async function() {
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhvdW9ob2JhZHNlbGtzd2F4d3N5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxMTM0NTIsImV4cCI6MjA4OTY4OTQ1Mn0.hOBki3aRyTqOFy3CJZmrNBBULDoRxb9xRjz8iDUEMjo'
   );
 
-  var _editMode           = false;
-  var _selectedAvatar     = null;
-  var _selectedRecipeIds  = {};
+  var _editMode            = false;
+  var _selectedAvatar      = null;
+  var _selectedRecipeIds   = {};
   var _selectedFavoriteIds = {};
-  var _drawersByRecipeId  = {};
+  var _drawersByRecipeId   = {};
 
   var SOCIAL_URL_MAP = {
     instagram: function(h) { return 'https://instagram.com/' + h; },
@@ -569,7 +569,11 @@ window.addEventListener('load', async function() {
 
     if (!applyBtn) return;
 
-    applyBtn.addEventListener('click', async function() {
+    document.addEventListener('click', function(e) {
+      if (!applyBtn.contains(e.target)) return;
+      e.preventDefault();
+      e.stopPropagation();
+
       var selectedIds = Object.keys(_selectedFavoriteIds).filter(function(id) {
         return _selectedFavoriteIds[id] === true;
       });
@@ -587,40 +591,38 @@ window.addEventListener('load', async function() {
       applyBtn.style.opacity       = '0.5';
       applyBtn.style.pointerEvents = 'none';
 
-      try {
-        var { error: removeError } = await _supabase
-          .from('favorites')
-          .delete()
-          .in('recipe_id', selectedIds)
-          .eq('user_id', userId);
+      _supabase
+        .from('favorites')
+        .delete()
+        .in('recipe_id', selectedIds)
+        .eq('user_id', userId)
+        .then(function(res) {
+          if (res.error) {
+            alert('Could not remove favorites. Please try again.');
+            applyBtn.style.opacity       = '';
+            applyBtn.style.pointerEvents = '';
+          } else {
+            selectedIds.forEach(function(id) {
+              var wrapper = document.querySelector('[data-favorite-recipe-id="' + id + '"]');
+              if (wrapper) wrapper.remove();
+            });
+            _selectedFavoriteIds = {};
 
-        if (removeError) {
-          alert('Could not remove favorites. Please try again.');
-        } else {
-          selectedIds.forEach(function(id) {
-            var wrapper = document.querySelector('[data-favorite-recipe-id="' + id + '"]');
-            if (wrapper) wrapper.remove();
-          });
-          _selectedFavoriteIds = {};
+            var listEl    = document.querySelector('[wized="favorites-list"]');
+            var remaining = listEl ? listEl.querySelectorAll('[data-favorite-recipe-id]') : [];
+            if (remaining.length === 0) {
+              var emptyEl = document.querySelector('[wized="favorites-empty"]');
+              if (emptyEl) emptyEl.style.setProperty('display', 'block', 'important');
+              if (window._favoriteBulkActions) window._favoriteBulkActions.hideBulkActions();
+            }
 
-          var listEl    = document.querySelector('[wized="favorites-list"]');
-          var remaining = listEl ? listEl.querySelectorAll('[data-favorite-recipe-id]') : [];
-          if (remaining.length === 0) {
-            var emptyEl = document.querySelector('[wized="favorites-empty"]');
-            if (emptyEl) emptyEl.style.setProperty('display', 'block', 'important');
-            if (window._favoriteBulkActions) window._favoriteBulkActions.hideBulkActions();
+            if (removeRadio) removeRadio.checked = false;
+            closeBulkPanel();
+            applyBtn.style.opacity       = '';
+            applyBtn.style.pointerEvents = '';
           }
-
-          if (removeRadio) removeRadio.checked = false;
-          closeBulkPanel();
-        }
-      } catch(err) {
-        alert('Something went wrong. Please try again.');
-      } finally {
-        applyBtn.style.opacity       = '';
-        applyBtn.style.pointerEvents = '';
-      }
-    });
+        });
+    }, true);
   }
 
   // ── Shared note population functions ──────────────────────────────────────
@@ -1074,7 +1076,6 @@ window.addEventListener('load', async function() {
       return;
     }
 
-    // Show bulk actions now that favorites have loaded
     if (window._favoriteBulkActions) window._favoriteBulkActions.showBulkActions();
 
     var { data: allCommunityNotes } = await _supabase
@@ -1131,7 +1132,6 @@ window.addEventListener('load', async function() {
       if (base)   base.textContent   = toTitleCase(recipe.base_pairing || '');
       if (flavor) flavor.textContent = formatFlavor(recipe.flavor_profile);
 
-      // Wire favorites checkbox for bulk actions
       var favCheckbox = card.querySelector('[wized="favorites-checkbox"]');
       if (favCheckbox) {
         favCheckbox.addEventListener('change', function() {
@@ -1143,7 +1143,6 @@ window.addEventListener('load', async function() {
         });
       }
 
-      // Hide uploads-style checkbox and edit btn
       if (checkbox) checkbox.style.setProperty('display', 'none', 'important');
       if (editBtn)  editBtn.style.setProperty('display', 'none', 'important');
 
