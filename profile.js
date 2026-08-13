@@ -1075,7 +1075,7 @@ window.addEventListener('load', async function() {
     }
 
     // Favorites exist — show bulk actions
-    if (bulkActionsEl) bulkActionsEl.style.setProperty('display', 'block', 'important');
+    if (bulkActionsEl) bulkActionsEl.style.setProperty('display', 'flex', 'important');
 
     var { data: allCommunityNotes } = await _supabase
       .from('notes')
