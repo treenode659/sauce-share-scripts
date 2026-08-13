@@ -87,6 +87,7 @@ window.addEventListener('load', async function() {
   var _selectedRecipeIds   = {};
   var _selectedFavoriteIds = {};
   var _drawersByRecipeId   = {};
+  var _notesByRecipeId     = {}; // shared cache for favorites card builder
 
   var SOCIAL_URL_MAP = {
     instagram: function(h) { return 'https://instagram.com/' + h; },
@@ -430,210 +431,6 @@ window.addEventListener('load', async function() {
     });
   }
 
-  function initBulkActions(userId) {
-    var toggleBtn   = document.querySelector('[wized="bulk-action-toggle"]');
-    var bulkContent = document.querySelector('[wized="bulk-action-content"]');
-    var applyBtn    = document.querySelector('[wized="bulk-action-apply"]');
-    var deleteRadio = document.querySelector('[wized="bulk-action-delete"]');
-    var favRadio    = document.querySelector('[wized="bulk-action-favorites"]');
-    var schedRadio  = document.querySelector('[wized="bulk-action-schedule"]');
-    var collRadio   = document.querySelector('[wized="bulk-action-collection"]');
-    var _bulkOpen = false;
-    function openBulkPanel() {
-      if (!bulkContent || _bulkOpen) return;
-      _bulkOpen = true;
-      bulkContent.style.setProperty('display', 'flex', 'important');
-      if (toggleBtn) toggleBtn.style.transform = 'rotate(180deg)';
-    }
-    function closeBulkPanel() {
-      if (!bulkContent || !_bulkOpen) return;
-      _bulkOpen = false;
-      bulkContent.style.setProperty('display', 'none', 'important');
-      if (toggleBtn) toggleBtn.style.transform = '';
-    }
-    function hasAnyChecked() {
-      return Object.values(_selectedRecipeIds).some(function(v) { return v === true; });
-    }
-    if (toggleBtn) {
-      toggleBtn.addEventListener('click', function() {
-        if (_bulkOpen) closeBulkPanel();
-        else openBulkPanel();
-      });
-    }
-    if (bulkContent) bulkContent.style.setProperty('display', 'none', 'important');
-    window._bulkActions = {
-      openBulkPanel: openBulkPanel,
-      closeBulkPanel: closeBulkPanel,
-      hasAnyChecked: hasAnyChecked
-    };
-    if (!applyBtn) return;
-    applyBtn.addEventListener('click', async function() {
-      var selectedIds = Object.keys(_selectedRecipeIds).filter(function(id) {
-        return _selectedRecipeIds[id] === true;
-      });
-      if (selectedIds.length === 0) { alert('Please select at least one recipe.'); return; }
-      var isDelete     = deleteRadio && deleteRadio.checked;
-      var isFavorites  = favRadio    && favRadio.checked;
-      var isSchedule   = schedRadio  && schedRadio.checked;
-      var isCollection = collRadio   && collRadio.checked;
-      if (!isDelete && !isFavorites && !isSchedule && !isCollection) { alert('Please select an action.'); return; }
-      if (isFavorites || isSchedule || isCollection) { alert('This feature is coming soon.'); return; }
-      if (isDelete) {
-        var confirmed = confirm(
-          'Are you sure you want to delete ' + selectedIds.length +
-          ' recipe' + (selectedIds.length > 1 ? 's' : '') + '? This cannot be undone.'
-        );
-        if (!confirmed) return;
-        applyBtn.style.opacity = '0.5';
-        applyBtn.style.pointerEvents = 'none';
-        try {
-          var { error: deleteError } = await _supabase
-            .from('recipes')
-            .delete()
-            .in('id', selectedIds)
-            .eq('user_id', userId);
-          if (deleteError) {
-            alert('Could not delete recipes. Please try again.');
-          } else {
-            selectedIds.forEach(function(id) {
-              var wrapper = document.querySelector('[data-recipe-id="' + id + '"]');
-              if (wrapper) wrapper.remove();
-            });
-            _selectedRecipeIds = {};
-            var listEl = document.querySelector('[wized="recipes-list"]');
-            var remaining = listEl ? listEl.querySelectorAll('[wized="recipe-card-wrapper"]') : [];
-            if (remaining.length === 0) {
-              var emptyEl = document.querySelector('[wized="recipes-empty-uploads"]');
-              if (emptyEl) emptyEl.style.setProperty('display', 'block', 'important');
-            }
-            if (deleteRadio) deleteRadio.checked = false;
-            closeBulkPanel();
-          }
-        } catch(err) {
-          alert('Something went wrong. Please try again.');
-        } finally {
-          applyBtn.style.opacity = '';
-          applyBtn.style.pointerEvents = '';
-        }
-      }
-    });
-  }
-
-  function initFavoriteBulkActions(userId) {
-    var toggleBtn   = document.querySelector('[wized="favorites-bulk-toggle"]');
-    var bulkContent = document.querySelector('[wized="favorites-bulk-content"]');
-    var applyBtn    = document.querySelector('[wized="favorites-bulk-apply"]');
-    var removeRadio = document.querySelector('[wized="favorites-bulk-remove"]');
-
-    if (bulkContent) bulkContent.style.setProperty('display', 'none', 'important');
-
-    var _bulkOpen = false;
-
-    function openBulkPanel() {
-      if (!bulkContent || _bulkOpen) return;
-      _bulkOpen = true;
-      bulkContent.style.setProperty('display', 'flex', 'important');
-      if (toggleBtn) toggleBtn.style.transform = 'rotate(180deg)';
-    }
-    function closeBulkPanel() {
-      if (!bulkContent || !_bulkOpen) return;
-      _bulkOpen = false;
-      bulkContent.style.setProperty('display', 'none', 'important');
-      if (toggleBtn) toggleBtn.style.transform = '';
-    }
-    function hasAnyChecked() {
-      return Object.values(_selectedFavoriteIds).some(function(v) { return v === true; });
-    }
-
-    if (toggleBtn) {
-      toggleBtn.addEventListener('click', function() {
-        if (_bulkOpen) closeBulkPanel();
-        else openBulkPanel();
-      });
-    }
-
-    window._favoriteBulkActions = {
-      openBulkPanel:  openBulkPanel,
-      closeBulkPanel: closeBulkPanel,
-      hasAnyChecked:  hasAnyChecked
-    };
-
-    if (!applyBtn) return;
-
-    document.addEventListener('click', function(e) {
-      if (!applyBtn.contains(e.target)) return;
-      e.preventDefault();
-      e.stopPropagation();
-
-      var selectedIds = Object.keys(_selectedFavoriteIds).filter(function(id) {
-        return _selectedFavoriteIds[id] === true;
-      });
-      if (selectedIds.length === 0) { alert('Please select at least one recipe.'); return; }
-
-      // Check both native .checked and Webflow custom radio class
-      var customRadio = removeRadio ? removeRadio.previousElementSibling : null;
-      var isRemove = removeRadio && (
-        removeRadio.checked ||
-        (customRadio && customRadio.classList.contains('w--redirected-checked'))
-      );
-      if (!isRemove) { alert('Please select an action.'); return; }
-
-      var confirmed = confirm(
-        'Remove ' + selectedIds.length +
-        ' recipe' + (selectedIds.length > 1 ? 's' : '') + ' from your favorites?'
-      );
-      if (!confirmed) return;
-
-      applyBtn.style.opacity       = '0.5';
-      applyBtn.style.pointerEvents = 'none';
-
-      _supabase
-        .from('favorites')
-        .delete()
-        .in('recipe_id', selectedIds)
-        .eq('user_id', userId)
-        .then(function(res) {
-          if (res.error) {
-            alert('Could not remove favorites. Please try again.');
-            applyBtn.style.opacity       = '';
-            applyBtn.style.pointerEvents = '';
-          } else {
-            selectedIds.forEach(function(id) {
-              var wrapper = document.querySelector('[data-favorite-recipe-id="' + id + '"]');
-              if (wrapper) wrapper.remove();
-            });
-            _selectedFavoriteIds = {};
-
-            // Uncheck all remaining favorite card checkboxes
-            document.querySelectorAll('[wized="favorites-checkbox"]').forEach(function(cb) {
-              cb.checked = false;
-            });
-
-            // Reset the action radio and its custom visual state
-            if (removeRadio) {
-              removeRadio.checked = false;
-              var customRadioEl = removeRadio.previousElementSibling;
-              if (customRadioEl) customRadioEl.classList.remove('w--redirected-checked');
-            }
-
-            var listEl    = document.querySelector('[wized="favorites-list"]');
-            var remaining = listEl ? listEl.querySelectorAll('[data-favorite-recipe-id]') : [];
-            var bulkActionsEl = document.querySelector('[wized="favorites-bulk-actions"]');
-
-            if (remaining.length === 0) {
-              var emptyEl = document.querySelector('[wized="favorites-empty"]');
-              if (emptyEl) emptyEl.style.setProperty('display', 'block', 'important');
-              if (bulkActionsEl) bulkActionsEl.style.setProperty('display', 'none', 'important');
-            }
-
-            closeBulkPanel();
-            applyBtn.style.opacity       = '';
-            applyBtn.style.pointerEvents = '';
-          }
-        });
-    }, true);
-  }
-
   // ── Shared note population functions ──────────────────────────────────────
 
   function populatePinnedNote(drawer, recipe) {
@@ -840,6 +637,409 @@ window.addEventListener('load', async function() {
     });
   }
 
+  // ── Shared favorite card builder ───────────────────────────────────────────
+
+  function buildFavoriteCard(recipe) {
+    var templateEl       = document.querySelector('[wized="favorites-card-template"]');
+    var drawerTemplateEl = document.querySelector('[wized="favorites-glance-drawer-template"]');
+    if (!templateEl) return null;
+
+    var drawer = drawerTemplateEl ? drawerTemplateEl.cloneNode(true) : null;
+    if (drawer) {
+      drawer.removeAttribute('wized');
+      drawer.setAttribute('wized', 'recipe-drawer');
+      drawer.style.setProperty('display', 'none', 'important');
+    }
+
+    var card = templateEl.cloneNode(true);
+    card.removeAttribute('wized');
+    card.style.setProperty('display', 'flex', 'important');
+
+    var thumb     = card.querySelector('[wized="recipe-thumb"]');
+    var title     = card.querySelector('[wized="recipe-title"]');
+    var base      = card.querySelector('[wized="recipe-base"]');
+    var flavor    = card.querySelector('[wized="recipe-flavor"]');
+    var glanceBtn = card.querySelector('[wized="recipe-glance-btn"]');
+    var checkbox  = card.querySelector('[wized="recipe-checkbox"]');
+    var editBtn   = drawer ? drawer.querySelector('[wized="recipe-edit-btn"]') : null;
+
+    var ingredientsList = drawer ? drawer.querySelector('[wized="recipe-ingredients-list"]') : null;
+    var directionsList  = drawer ? drawer.querySelector('[wized="recipe-directions-list"]')  : null;
+    var instructions    = drawer ? drawer.querySelector('[wized="recipe-instructions"]')     : null;
+    var notesSection    = drawer ? drawer.querySelector('[wized="recipe-notes-section"]')    : null;
+    var noteCardList    = drawer ? drawer.querySelector('[wized="recipe-note-card-list"]')   : null;
+    var notesToggle     = drawer ? drawer.querySelector('[wized="recipe-notes-toggle"]')     : null;
+
+    if (thumb) {
+      thumb.removeAttribute('srcset');
+      thumb.removeAttribute('sizes');
+      thumb.removeAttribute('loading');
+      thumb.setAttribute('src', recipe.header_image || '');
+      thumb.alt = recipe.recipe_title || '';
+    }
+    if (title) {
+      title.textContent = recipe.recipe_title || '';
+      title.style.cursor = 'pointer';
+      title.addEventListener('click', function() {
+        window.location.href = 'https://sauce-share-4c2702.webflow.io/recipe?slug=' + (recipe.slug || '');
+      });
+    }
+    if (base)   base.textContent   = toTitleCase(recipe.base_pairing || '');
+    if (flavor) flavor.textContent = formatFlavor(recipe.flavor_profile);
+
+    var favCheckbox = card.querySelector('[wized="favorites-checkbox"]');
+    if (favCheckbox) {
+      favCheckbox.addEventListener('change', function() {
+        _selectedFavoriteIds[recipe.id] = favCheckbox.checked;
+        if (window._favoriteBulkActions) {
+          if (favCheckbox.checked) window._favoriteBulkActions.openBulkPanel();
+          else if (!window._favoriteBulkActions.hasAnyChecked()) window._favoriteBulkActions.closeBulkPanel();
+        }
+      });
+    }
+
+    if (checkbox) checkbox.style.setProperty('display', 'none', 'important');
+    if (editBtn)  editBtn.style.setProperty('display', 'none', 'important');
+
+    if (ingredientsList) renderRows(ingredientsList, 'recipe-ingredient-row-template', 'recipe-ingredient-text', recipe.ingredients);
+    if (directionsList)  renderRows(directionsList,  'recipe-direction-row-template',  'recipe-direction-text',  recipe.directions);
+
+    if (instructions) instructions.style.setProperty('display', 'none', 'important');
+    if (notesSection) notesSection.style.setProperty('display', 'none', 'important');
+    if (noteCardList) noteCardList.style.setProperty('display', 'none', 'important');
+
+    var communityTemplate = drawer ? drawer.querySelector('[wized="recipe-community-note-template"]') : null;
+    if (communityTemplate) communityTemplate.style.setProperty('display', 'none', 'important');
+
+    var pinnedTemplate = drawer ? drawer.querySelector('[wized="recipe-pinned-note-template"]') : null;
+    if (pinnedTemplate) pinnedTemplate.style.setProperty('display', 'none', 'important');
+
+    if (!!recipe.note_blurb && noteCardList && drawer) populatePinnedNote(drawer, recipe);
+
+    var recipeNotes = _notesByRecipeId[recipe.id] || [];
+    if (recipeNotes.length > 0 && noteCardList && drawer) populateCommunityNotes(drawer, recipeNotes);
+
+    if (notesToggle && noteCardList) {
+      var _notesOpen = false;
+      var notesIcon  = notesToggle.querySelector('img');
+      document.addEventListener('click', function(e) {
+        if (!notesToggle.contains(e.target)) return;
+        _notesOpen = !_notesOpen;
+        noteCardList.style.setProperty('display', _notesOpen ? 'flex' : 'none', 'important');
+        if (notesIcon) {
+          notesIcon.style.transition = 'transform 0.3s ease';
+          notesIcon.style.transform  = _notesOpen ? 'rotate(180deg)' : 'rotate(0deg)';
+        }
+      }, true);
+    }
+
+    if (glanceBtn && drawer) {
+      var glanceIcon = glanceBtn.querySelector('[wized="recipe-glance-icon"]');
+      glanceBtn.addEventListener('click', function() {
+        var isOpen = drawer._glanceOpen;
+        if (isOpen) {
+          drawer._glanceOpen = false;
+          drawer.style.setProperty('display', 'none', 'important');
+          if (glanceIcon) glanceIcon.style.transform = '';
+        } else {
+          drawer._glanceOpen = true;
+          drawer.style.setProperty('display', 'block', 'important');
+          if (instructions) instructions.style.setProperty('display', 'flex', 'important');
+          if (notesSection)  notesSection.style.setProperty('display', 'flex', 'important');
+          if (glanceIcon) glanceIcon.style.transform = 'rotate(180deg)';
+        }
+      });
+    }
+
+    var wrapper = document.createElement('div');
+    wrapper.setAttribute('data-favorite-recipe-id', recipe.id);
+    wrapper.style.width = '100%';
+    wrapper.appendChild(card);
+    if (drawer) wrapper.appendChild(drawer);
+
+    return wrapper;
+  }
+
+  // ── Bulk actions ───────────────────────────────────────────────────────────
+
+  function initBulkActions(userId) {
+    var toggleBtn   = document.querySelector('[wized="bulk-action-toggle"]');
+    var bulkContent = document.querySelector('[wized="bulk-action-content"]');
+    var applyBtn    = document.querySelector('[wized="bulk-action-apply"]');
+    var deleteRadio = document.querySelector('[wized="bulk-action-delete"]');
+    var favRadio    = document.querySelector('[wized="bulk-action-favorites"]');
+    var schedRadio  = document.querySelector('[wized="bulk-action-schedule"]');
+    var collRadio   = document.querySelector('[wized="bulk-action-collection"]');
+    var _bulkOpen = false;
+
+    function openBulkPanel() {
+      if (!bulkContent || _bulkOpen) return;
+      _bulkOpen = true;
+      bulkContent.style.setProperty('display', 'flex', 'important');
+      if (toggleBtn) toggleBtn.style.transform = 'rotate(180deg)';
+    }
+    function closeBulkPanel() {
+      if (!bulkContent || !_bulkOpen) return;
+      _bulkOpen = false;
+      bulkContent.style.setProperty('display', 'none', 'important');
+      if (toggleBtn) toggleBtn.style.transform = '';
+    }
+    function hasAnyChecked() {
+      return Object.values(_selectedRecipeIds).some(function(v) { return v === true; });
+    }
+    if (toggleBtn) {
+      toggleBtn.addEventListener('click', function() {
+        if (_bulkOpen) closeBulkPanel();
+        else openBulkPanel();
+      });
+    }
+    if (bulkContent) bulkContent.style.setProperty('display', 'none', 'important');
+    window._bulkActions = {
+      openBulkPanel: openBulkPanel,
+      closeBulkPanel: closeBulkPanel,
+      hasAnyChecked: hasAnyChecked
+    };
+    if (!applyBtn) return;
+
+    applyBtn.addEventListener('click', async function() {
+      var selectedIds = Object.keys(_selectedRecipeIds).filter(function(id) {
+        return _selectedRecipeIds[id] === true;
+      });
+      if (selectedIds.length === 0) { alert('Please select at least one recipe.'); return; }
+
+      var isDelete     = deleteRadio && deleteRadio.checked;
+      var isFavorites  = favRadio    && favRadio.checked;
+      var isSchedule   = schedRadio  && schedRadio.checked;
+      var isCollection = collRadio   && collRadio.checked;
+
+      if (!isDelete && !isFavorites && !isSchedule && !isCollection) { alert('Please select an action.'); return; }
+      if (isSchedule || isCollection) { alert('This feature is coming soon.'); return; }
+
+      // ── Add to favorites ────────────────────────────────────────────────
+      if (isFavorites) {
+        applyBtn.style.opacity = '0.5';
+        applyBtn.style.pointerEvents = 'none';
+        try {
+          // Filter out already-favorited recipes
+          var alreadyFavorited = document.querySelectorAll('[data-favorite-recipe-id]');
+          var alreadyIds = Array.prototype.slice.call(alreadyFavorited).map(function(el) {
+            return el.getAttribute('data-favorite-recipe-id');
+          });
+          var toAdd = selectedIds.filter(function(id) { return !alreadyIds.includes(id); });
+
+          if (toAdd.length > 0) {
+            var inserts = toAdd.map(function(id) { return { user_id: userId, recipe_id: id }; });
+            var { error: insertError } = await _supabase.from('favorites').insert(inserts);
+
+            if (!insertError) {
+              var listEl      = document.querySelector('[wized="favorites-list"]');
+              var emptyEl     = document.querySelector('[wized="favorites-empty"]');
+              var bulkActionsEl = document.querySelector('[wized="favorites-bulk-actions"]');
+
+              if (emptyEl) emptyEl.style.setProperty('display', 'none', 'important');
+              if (bulkActionsEl) bulkActionsEl.style.setProperty('display', 'flex', 'important');
+
+              // Add cards to top of favorites list in reverse so newest appears first
+              toAdd.slice().reverse().forEach(function(id) {
+                var recipe = null;
+                // Find recipe data from existing upload cards
+                var uploadWrapper = document.querySelector('[data-recipe-id="' + id + '"]');
+                if (uploadWrapper) {
+                  // Get recipe data from _drawersByRecipeId or re-fetch
+                }
+              });
+
+              // Fetch recipe data for newly favorited recipes and prepend cards
+              var { data: newRecipes } = await _supabase
+                .from('recipes')
+                .select('id, recipe_title, slug, header_image, base_pairing, flavor_profile, ingredients, directions, note_blurb, note_tried, note_details, photo_url')
+                .in('id', toAdd);
+
+              if (newRecipes && listEl) {
+                // Reverse so most recent (last inserted) appears at top
+                newRecipes.slice().reverse().forEach(function(recipe) {
+                  var wrapper = buildFavoriteCard(recipe);
+                  if (wrapper && listEl.firstChild) {
+                    listEl.insertBefore(wrapper, listEl.firstChild);
+                  } else if (wrapper) {
+                    listEl.appendChild(wrapper);
+                  }
+                });
+              }
+            }
+          }
+
+          // Uncheck all upload checkboxes
+          document.querySelectorAll('[wized="recipe-checkbox"]').forEach(function(cb) {
+            cb.checked = false;
+          });
+          _selectedRecipeIds = {};
+          if (favRadio) favRadio.checked = false;
+          closeBulkPanel();
+
+        } catch(err) {
+          alert('Something went wrong. Please try again.');
+        } finally {
+          applyBtn.style.opacity = '';
+          applyBtn.style.pointerEvents = '';
+        }
+        return;
+      }
+
+      // ── Delete ──────────────────────────────────────────────────────────
+      if (isDelete) {
+        var confirmed = confirm(
+          'Are you sure you want to delete ' + selectedIds.length +
+          ' recipe' + (selectedIds.length > 1 ? 's' : '') + '? This cannot be undone.'
+        );
+        if (!confirmed) return;
+        applyBtn.style.opacity = '0.5';
+        applyBtn.style.pointerEvents = 'none';
+        try {
+          var { error: deleteError } = await _supabase
+            .from('recipes')
+            .delete()
+            .in('id', selectedIds)
+            .eq('user_id', userId);
+          if (deleteError) {
+            alert('Could not delete recipes. Please try again.');
+          } else {
+            selectedIds.forEach(function(id) {
+              var wrapper = document.querySelector('[data-recipe-id="' + id + '"]');
+              if (wrapper) wrapper.remove();
+            });
+            _selectedRecipeIds = {};
+            var listEl = document.querySelector('[wized="recipes-list"]');
+            var remaining = listEl ? listEl.querySelectorAll('[wized="recipe-card-wrapper"]') : [];
+            if (remaining.length === 0) {
+              var emptyEl = document.querySelector('[wized="recipes-empty-uploads"]');
+              if (emptyEl) emptyEl.style.setProperty('display', 'block', 'important');
+            }
+            if (deleteRadio) deleteRadio.checked = false;
+            closeBulkPanel();
+          }
+        } catch(err) {
+          alert('Something went wrong. Please try again.');
+        } finally {
+          applyBtn.style.opacity = '';
+          applyBtn.style.pointerEvents = '';
+        }
+      }
+    });
+  }
+
+  function initFavoriteBulkActions(userId) {
+    var toggleBtn   = document.querySelector('[wized="favorites-bulk-toggle"]');
+    var bulkContent = document.querySelector('[wized="favorites-bulk-content"]');
+    var applyBtn    = document.querySelector('[wized="favorites-bulk-apply"]');
+    var removeRadio = document.querySelector('[wized="favorites-bulk-remove"]');
+
+    if (bulkContent) bulkContent.style.setProperty('display', 'none', 'important');
+
+    var _bulkOpen = false;
+
+    function openBulkPanel() {
+      if (!bulkContent || _bulkOpen) return;
+      _bulkOpen = true;
+      bulkContent.style.setProperty('display', 'flex', 'important');
+      if (toggleBtn) toggleBtn.style.transform = 'rotate(180deg)';
+    }
+    function closeBulkPanel() {
+      if (!bulkContent || !_bulkOpen) return;
+      _bulkOpen = false;
+      bulkContent.style.setProperty('display', 'none', 'important');
+      if (toggleBtn) toggleBtn.style.transform = '';
+    }
+    function hasAnyChecked() {
+      return Object.values(_selectedFavoriteIds).some(function(v) { return v === true; });
+    }
+
+    if (toggleBtn) {
+      toggleBtn.addEventListener('click', function() {
+        if (_bulkOpen) closeBulkPanel();
+        else openBulkPanel();
+      });
+    }
+
+    window._favoriteBulkActions = {
+      openBulkPanel:  openBulkPanel,
+      closeBulkPanel: closeBulkPanel,
+      hasAnyChecked:  hasAnyChecked
+    };
+
+    if (!applyBtn) return;
+
+    document.addEventListener('click', function(e) {
+      if (!applyBtn.contains(e.target)) return;
+      e.preventDefault();
+      e.stopPropagation();
+
+      var selectedIds = Object.keys(_selectedFavoriteIds).filter(function(id) {
+        return _selectedFavoriteIds[id] === true;
+      });
+      if (selectedIds.length === 0) { alert('Please select at least one recipe.'); return; }
+
+      var customRadio = removeRadio ? removeRadio.previousElementSibling : null;
+      var isRemove = removeRadio && (
+        removeRadio.checked ||
+        (customRadio && customRadio.classList.contains('w--redirected-checked'))
+      );
+      if (!isRemove) { alert('Please select an action.'); return; }
+
+      var confirmed = confirm(
+        'Remove ' + selectedIds.length +
+        ' recipe' + (selectedIds.length > 1 ? 's' : '') + ' from your favorites?'
+      );
+      if (!confirmed) return;
+
+      applyBtn.style.opacity       = '0.5';
+      applyBtn.style.pointerEvents = 'none';
+
+      _supabase
+        .from('favorites')
+        .delete()
+        .in('recipe_id', selectedIds)
+        .eq('user_id', userId)
+        .then(function(res) {
+          if (res.error) {
+            alert('Could not remove favorites. Please try again.');
+            applyBtn.style.opacity       = '';
+            applyBtn.style.pointerEvents = '';
+          } else {
+            selectedIds.forEach(function(id) {
+              var wrapper = document.querySelector('[data-favorite-recipe-id="' + id + '"]');
+              if (wrapper) wrapper.remove();
+            });
+            _selectedFavoriteIds = {};
+
+            document.querySelectorAll('[wized="favorites-checkbox"]').forEach(function(cb) {
+              cb.checked = false;
+            });
+
+            if (removeRadio) {
+              removeRadio.checked = false;
+              var customRadioEl = removeRadio.previousElementSibling;
+              if (customRadioEl) customRadioEl.classList.remove('w--redirected-checked');
+            }
+
+            var listEl    = document.querySelector('[wized="favorites-list"]');
+            var remaining = listEl ? listEl.querySelectorAll('[data-favorite-recipe-id]') : [];
+            var bulkActionsEl = document.querySelector('[wized="favorites-bulk-actions"]');
+
+            if (remaining.length === 0) {
+              var emptyEl = document.querySelector('[wized="favorites-empty"]');
+              if (emptyEl) emptyEl.style.setProperty('display', 'block', 'important');
+              if (bulkActionsEl) bulkActionsEl.style.setProperty('display', 'none', 'important');
+            }
+
+            closeBulkPanel();
+            applyBtn.style.opacity       = '';
+            applyBtn.style.pointerEvents = '';
+          }
+        });
+    }, true);
+  }
+
   // ── Load recipes ───────────────────────────────────────────────────────────
 
   async function loadProfileRecipes(userId) {
@@ -881,10 +1081,11 @@ window.addEventListener('load', async function() {
 
     allCommunityNotes = allCommunityNotes || [];
 
-    var notesByRecipeId = {};
+    // Populate shared notes cache
+    _notesByRecipeId = {};
     allCommunityNotes.forEach(function(note) {
-      if (!notesByRecipeId[note.recipe_id]) notesByRecipeId[note.recipe_id] = [];
-      notesByRecipeId[note.recipe_id].push(note);
+      if (!_notesByRecipeId[note.recipe_id]) _notesByRecipeId[note.recipe_id] = [];
+      _notesByRecipeId[note.recipe_id].push(note);
     });
 
     var PAGE_SIZE = 20;
@@ -959,7 +1160,7 @@ window.addEventListener('load', async function() {
 
       if (!!recipe.note_blurb && noteCardList) populatePinnedNote(drawer, recipe);
 
-      var recipeNotes = notesByRecipeId[recipe.id] || [];
+      var recipeNotes = _notesByRecipeId[recipe.id] || [];
       if (recipeNotes.length > 0 && noteCardList) populateCommunityNotes(drawer, recipeNotes);
 
       if (notesToggle && noteCardList) {
@@ -1091,126 +1292,8 @@ window.addEventListener('load', async function() {
 
     if (bulkActionsEl) bulkActionsEl.style.setProperty('display', 'flex', 'important');
 
-    var { data: allCommunityNotes } = await _supabase
-      .from('notes')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
-
-    allCommunityNotes = allCommunityNotes || [];
-
-    var notesByRecipeId = {};
-    allCommunityNotes.forEach(function(note) {
-      if (!notesByRecipeId[note.recipe_id]) notesByRecipeId[note.recipe_id] = [];
-      notesByRecipeId[note.recipe_id].push(note);
-    });
-
     var PAGE_SIZE      = 20;
     var currentlyShown = 0;
-
-    function buildFavoriteCard(recipe, drawer) {
-      var card = templateEl.cloneNode(true);
-      card.removeAttribute('wized');
-      card.style.setProperty('display', 'flex', 'important');
-
-      var thumb     = card.querySelector('[wized="recipe-thumb"]');
-      var title     = card.querySelector('[wized="recipe-title"]');
-      var base      = card.querySelector('[wized="recipe-base"]');
-      var flavor    = card.querySelector('[wized="recipe-flavor"]');
-      var glanceBtn = card.querySelector('[wized="recipe-glance-btn"]');
-      var checkbox  = card.querySelector('[wized="recipe-checkbox"]');
-      var editBtn   = drawer ? drawer.querySelector('[wized="recipe-edit-btn"]') : null;
-
-      var ingredientsList = drawer ? drawer.querySelector('[wized="recipe-ingredients-list"]') : null;
-      var directionsList  = drawer ? drawer.querySelector('[wized="recipe-directions-list"]')  : null;
-      var instructions    = drawer ? drawer.querySelector('[wized="recipe-instructions"]')     : null;
-      var notesSection    = drawer ? drawer.querySelector('[wized="recipe-notes-section"]')    : null;
-      var noteCardList    = drawer ? drawer.querySelector('[wized="recipe-note-card-list"]')   : null;
-      var notesToggle     = drawer ? drawer.querySelector('[wized="recipe-notes-toggle"]')     : null;
-
-      if (thumb) {
-        thumb.removeAttribute('srcset');
-        thumb.removeAttribute('sizes');
-        thumb.removeAttribute('loading');
-        thumb.setAttribute('src', recipe.header_image || '');
-        thumb.alt = recipe.recipe_title || '';
-      }
-      if (title) {
-        title.textContent = recipe.recipe_title || '';
-        title.style.cursor = 'pointer';
-        title.addEventListener('click', function() {
-          window.location.href = 'https://sauce-share-4c2702.webflow.io/recipe?slug=' + (recipe.slug || '');
-        });
-      }
-      if (base)   base.textContent   = toTitleCase(recipe.base_pairing || '');
-      if (flavor) flavor.textContent = formatFlavor(recipe.flavor_profile);
-
-      var favCheckbox = card.querySelector('[wized="favorites-checkbox"]');
-      if (favCheckbox) {
-        favCheckbox.addEventListener('change', function() {
-          _selectedFavoriteIds[recipe.id] = favCheckbox.checked;
-          if (window._favoriteBulkActions) {
-            if (favCheckbox.checked) window._favoriteBulkActions.openBulkPanel();
-            else if (!window._favoriteBulkActions.hasAnyChecked()) window._favoriteBulkActions.closeBulkPanel();
-          }
-        });
-      }
-
-      if (checkbox) checkbox.style.setProperty('display', 'none', 'important');
-      if (editBtn)  editBtn.style.setProperty('display', 'none', 'important');
-
-      if (ingredientsList) renderRows(ingredientsList, 'recipe-ingredient-row-template', 'recipe-ingredient-text', recipe.ingredients);
-      if (directionsList)  renderRows(directionsList,  'recipe-direction-row-template',  'recipe-direction-text',  recipe.directions);
-
-      if (instructions) instructions.style.setProperty('display', 'none', 'important');
-      if (notesSection) notesSection.style.setProperty('display', 'none', 'important');
-      if (noteCardList) noteCardList.style.setProperty('display', 'none', 'important');
-
-      var communityTemplate = drawer ? drawer.querySelector('[wized="recipe-community-note-template"]') : null;
-      if (communityTemplate) communityTemplate.style.setProperty('display', 'none', 'important');
-
-      var pinnedTemplate = drawer ? drawer.querySelector('[wized="recipe-pinned-note-template"]') : null;
-      if (pinnedTemplate) pinnedTemplate.style.setProperty('display', 'none', 'important');
-
-      if (!!recipe.note_blurb && noteCardList) populatePinnedNote(drawer, recipe);
-
-      var recipeNotes = notesByRecipeId[recipe.id] || [];
-      if (recipeNotes.length > 0 && noteCardList) populateCommunityNotes(drawer, recipeNotes);
-
-      if (notesToggle && noteCardList) {
-        var _notesOpen = false;
-        var notesIcon  = notesToggle.querySelector('img');
-        document.addEventListener('click', function(e) {
-          if (!notesToggle.contains(e.target)) return;
-          _notesOpen = !_notesOpen;
-          noteCardList.style.setProperty('display', _notesOpen ? 'flex' : 'none', 'important');
-          if (notesIcon) {
-            notesIcon.style.transition = 'transform 0.3s ease';
-            notesIcon.style.transform  = _notesOpen ? 'rotate(180deg)' : 'rotate(0deg)';
-          }
-        }, true);
-      }
-
-      if (glanceBtn && drawer) {
-        var glanceIcon = glanceBtn.querySelector('[wized="recipe-glance-icon"]');
-        glanceBtn.addEventListener('click', function() {
-          var isOpen = drawer._glanceOpen;
-          if (isOpen) {
-            drawer._glanceOpen = false;
-            drawer.style.setProperty('display', 'none', 'important');
-            if (glanceIcon) glanceIcon.style.transform = '';
-          } else {
-            drawer._glanceOpen = true;
-            drawer.style.setProperty('display', 'block', 'important');
-            if (instructions) instructions.style.setProperty('display', 'flex', 'important');
-            if (notesSection)  notesSection.style.setProperty('display', 'flex', 'important');
-            if (glanceIcon) glanceIcon.style.transform = 'rotate(180deg)';
-          }
-        });
-      }
-
-      return card;
-    }
 
     function showPage(upTo) {
       var wrappers = listEl.querySelectorAll('[data-favorite-recipe-id]');
@@ -1220,20 +1303,8 @@ window.addEventListener('load', async function() {
     }
 
     recipes.forEach(function(recipe) {
-      var drawer = drawerTemplateEl ? drawerTemplateEl.cloneNode(true) : null;
-      if (drawer) {
-        drawer.removeAttribute('wized');
-        drawer.setAttribute('wized', 'recipe-drawer');
-        drawer.style.setProperty('display', 'none', 'important');
-      }
-      var card = buildFavoriteCard(recipe, drawer);
-      card.setAttribute('wized', 'favorites-card');
-      var wrapper = document.createElement('div');
-      wrapper.setAttribute('data-favorite-recipe-id', recipe.id);
-      wrapper.style.width = '100%';
-      wrapper.appendChild(card);
-      if (drawer) wrapper.appendChild(drawer);
-      listEl.appendChild(wrapper);
+      var wrapper = buildFavoriteCard(recipe);
+      if (wrapper) listEl.appendChild(wrapper);
     });
 
     currentlyShown = Math.min(PAGE_SIZE, recipes.length);
