@@ -570,7 +570,12 @@ window.addEventListener('load', async function() {
       });
       if (selectedIds.length === 0) { alert('Please select at least one recipe.'); return; }
 
-      var isRemove = removeRadio && removeRadio.checked;
+      // Check both native .checked and Webflow custom radio class
+      var customRadio = removeRadio ? removeRadio.previousElementSibling : null;
+      var isRemove = removeRadio && (
+        removeRadio.checked ||
+        (customRadio && customRadio.classList.contains('w--redirected-checked'))
+      );
       if (!isRemove) { alert('Please select an action.'); return; }
 
       var confirmed = confirm(
@@ -599,6 +604,18 @@ window.addEventListener('load', async function() {
             });
             _selectedFavoriteIds = {};
 
+            // Uncheck all remaining favorite card checkboxes
+            document.querySelectorAll('[wized="favorites-checkbox"]').forEach(function(cb) {
+              cb.checked = false;
+            });
+
+            // Reset the action radio and its custom visual state
+            if (removeRadio) {
+              removeRadio.checked = false;
+              var customRadioEl = removeRadio.previousElementSibling;
+              if (customRadioEl) customRadioEl.classList.remove('w--redirected-checked');
+            }
+
             var listEl    = document.querySelector('[wized="favorites-list"]');
             var remaining = listEl ? listEl.querySelectorAll('[data-favorite-recipe-id]') : [];
             var bulkActionsEl = document.querySelector('[wized="favorites-bulk-actions"]');
@@ -609,7 +626,6 @@ window.addEventListener('load', async function() {
               if (bulkActionsEl) bulkActionsEl.style.setProperty('display', 'none', 'important');
             }
 
-            if (removeRadio) removeRadio.checked = false;
             closeBulkPanel();
             applyBtn.style.opacity       = '';
             applyBtn.style.pointerEvents = '';
@@ -1034,18 +1050,17 @@ window.addEventListener('load', async function() {
   // ── Load favorite recipes ──────────────────────────────────────────────────
 
   async function loadFavoriteRecipes(userId) {
-    var listEl              = document.querySelector('[wized="favorites-list"]');
-    var templateEl          = document.querySelector('[wized="favorites-card-template"]');
-    var drawerTemplateEl    = document.querySelector('[wized="favorites-glance-drawer-template"]');
-    var emptyEl             = document.querySelector('[wized="favorites-empty"]');
-    var seeMoreBtn          = document.querySelector('[wized="favorites-see-more-btn"]');
-    var seeLessBtn          = document.querySelector('[wized="favorites-see-less-btn"]');
-    var showButtonsWrapper  = document.querySelector('[wized="favorites-show-buttons-wrapper"]');
-    var bulkActionsEl       = document.querySelector('[wized="favorites-bulk-actions"]');
+    var listEl             = document.querySelector('[wized="favorites-list"]');
+    var templateEl         = document.querySelector('[wized="favorites-card-template"]');
+    var drawerTemplateEl   = document.querySelector('[wized="favorites-glance-drawer-template"]');
+    var emptyEl            = document.querySelector('[wized="favorites-empty"]');
+    var seeMoreBtn         = document.querySelector('[wized="favorites-see-more-btn"]');
+    var seeLessBtn         = document.querySelector('[wized="favorites-see-less-btn"]');
+    var showButtonsWrapper = document.querySelector('[wized="favorites-show-buttons-wrapper"]');
+    var bulkActionsEl      = document.querySelector('[wized="favorites-bulk-actions"]');
 
     if (!listEl || !templateEl) return;
 
-    // Hide everything at start
     if (bulkActionsEl)      bulkActionsEl.style.setProperty('display', 'none', 'important');
     if (showButtonsWrapper) showButtonsWrapper.style.setProperty('display', 'none', 'important');
     templateEl.style.setProperty('display', 'none', 'important');
@@ -1074,7 +1089,6 @@ window.addEventListener('load', async function() {
       return;
     }
 
-    // Favorites exist — show bulk actions
     if (bulkActionsEl) bulkActionsEl.style.setProperty('display', 'flex', 'important');
 
     var { data: allCommunityNotes } = await _supabase
@@ -1236,7 +1250,6 @@ window.addEventListener('load', async function() {
         showPage(currentlyShown);
         if (currentlyShown >= recipes.length) {
           if (seeMoreBtn) seeMoreBtn.style.setProperty('display', 'none', 'important');
-          if (showButtonsWrapper && !seeLessBtn) showButtonsWrapper.style.setProperty('display', 'none', 'important');
         }
         if (seeLessBtn) seeLessBtn.style.setProperty('display', 'block', 'important');
       });
