@@ -1034,19 +1034,20 @@ window.addEventListener('load', async function() {
   // ── Load favorite recipes ──────────────────────────────────────────────────
 
   async function loadFavoriteRecipes(userId) {
-    var listEl           = document.querySelector('[wized="favorites-list"]');
-    var templateEl       = document.querySelector('[wized="favorites-card-template"]');
-    var drawerTemplateEl = document.querySelector('[wized="favorites-glance-drawer-template"]');
-    var emptyEl          = document.querySelector('[wized="favorites-empty"]');
-    var seeMoreBtn       = document.querySelector('[wized="favorites-see-more-btn"]');
-    var seeLessBtn       = document.querySelector('[wized="favorites-see-less-btn"]');
-    var bulkActionsEl    = document.querySelector('[wized="favorites-bulk-actions"]');
+    var listEl              = document.querySelector('[wized="favorites-list"]');
+    var templateEl          = document.querySelector('[wized="favorites-card-template"]');
+    var drawerTemplateEl    = document.querySelector('[wized="favorites-glance-drawer-template"]');
+    var emptyEl             = document.querySelector('[wized="favorites-empty"]');
+    var seeMoreBtn          = document.querySelector('[wized="favorites-see-more-btn"]');
+    var seeLessBtn          = document.querySelector('[wized="favorites-see-less-btn"]');
+    var showButtonsWrapper  = document.querySelector('[wized="favorites-show-buttons-wrapper"]');
+    var bulkActionsEl       = document.querySelector('[wized="favorites-bulk-actions"]');
 
     if (!listEl || !templateEl) return;
 
-    // Hide bulk actions at start — only shown if favorites exist
-    if (bulkActionsEl) bulkActionsEl.style.setProperty('display', 'none', 'important');
-
+    // Hide everything at start
+    if (bulkActionsEl)      bulkActionsEl.style.setProperty('display', 'none', 'important');
+    if (showButtonsWrapper) showButtonsWrapper.style.setProperty('display', 'none', 'important');
     templateEl.style.setProperty('display', 'none', 'important');
     if (drawerTemplateEl) drawerTemplateEl.style.setProperty('display', 'none', 'important');
     if (emptyEl)          emptyEl.style.setProperty('display', 'none', 'important');
@@ -1225,13 +1226,18 @@ window.addEventListener('load', async function() {
     showPage(currentlyShown);
 
     if (recipes.length > PAGE_SIZE) {
+      if (showButtonsWrapper) showButtonsWrapper.style.setProperty('display', 'flex', 'important');
       if (seeMoreBtn) seeMoreBtn.style.setProperty('display', 'block', 'important');
     }
+
     if (seeMoreBtn) {
       seeMoreBtn.addEventListener('click', function() {
         currentlyShown = Math.min(currentlyShown + PAGE_SIZE, recipes.length);
         showPage(currentlyShown);
-        if (currentlyShown >= recipes.length) seeMoreBtn.style.setProperty('display', 'none', 'important');
+        if (currentlyShown >= recipes.length) {
+          if (seeMoreBtn) seeMoreBtn.style.setProperty('display', 'none', 'important');
+          if (showButtonsWrapper && !seeLessBtn) showButtonsWrapper.style.setProperty('display', 'none', 'important');
+        }
         if (seeLessBtn) seeLessBtn.style.setProperty('display', 'block', 'important');
       });
     }
@@ -1240,7 +1246,10 @@ window.addEventListener('load', async function() {
         currentlyShown = PAGE_SIZE;
         showPage(currentlyShown);
         seeLessBtn.style.setProperty('display', 'none', 'important');
-        if (seeMoreBtn && recipes.length > PAGE_SIZE) seeMoreBtn.style.setProperty('display', 'block', 'important');
+        if (recipes.length > PAGE_SIZE) {
+          if (seeMoreBtn) seeMoreBtn.style.setProperty('display', 'block', 'important');
+          if (showButtonsWrapper) showButtonsWrapper.style.setProperty('display', 'flex', 'important');
+        }
       });
     }
   }
