@@ -445,7 +445,7 @@ window.addEventListener('load', async function() {
 
   // ── Shared note population functions ──────────────────────────────────────
 
-  function populatePinnedNote(drawer, recipe) {
+  function populatePinnedNote(drawer, recipe, userId) {
     var pinnedTemplate = drawer.querySelector('[wized="recipe-pinned-note-template"]');
     var noteCardList   = drawer.querySelector('[wized="recipe-note-card-list"]');
     if (!pinnedTemplate || !noteCardList) return;
@@ -499,6 +499,19 @@ window.addEventListener('load', async function() {
       if (imgWrapper) imgWrapper.style.setProperty('display', 'none', 'important');
     }
 
+    // ── Owner label — always "your note" on own pinned notes ─────────────
+    var ownerLabel = card.querySelector('[wized="pinned-note-owner-label"]');
+    if (ownerLabel) {
+      ownerLabel.textContent  = 'your note';
+      ownerLabel.style.cursor = 'default';
+      ownerLabel.removeAttribute('href');
+    }
+
+    // ── Heart — always hidden on own pinned notes ─────────────────────────
+    var favBtn = card.querySelector('[wized="profile-note-favorite-btn"]');
+    if (favBtn) favBtn.style.setProperty('display', 'none', 'important');
+
+    // ── Edit link ─────────────────────────────────────────────────────────
     var editLink = card.querySelector('[wized="pinned-note-edit-link"]');
     if (editLink) {
       editLink.style.cursor = 'pointer';
@@ -507,6 +520,7 @@ window.addEventListener('load', async function() {
       });
     }
 
+    // ── Accordion ─────────────────────────────────────────────────────────
     var chevron    = card.querySelector('[wized="pinned-note-chevron"]');
     var chevronImg = chevron ? chevron.querySelector('img') : null;
     var engagement = card.querySelector('[wized="pinned-note-engagement"]');
@@ -537,7 +551,7 @@ window.addEventListener('load', async function() {
     noteCardList.appendChild(card);
   }
 
-  function populateCommunityNotes(drawer, notes) {
+  function populateCommunityNotes(drawer, notes, userId) {
     var noteTemplate = drawer.querySelector('[wized="recipe-community-note-template"]');
     var noteCardList = drawer.querySelector('[wized="recipe-note-card-list"]');
     if (!noteTemplate || !noteCardList) return;
@@ -592,14 +606,95 @@ window.addEventListener('load', async function() {
         if (imgWrapper) imgWrapper.style.setProperty('display', 'none', 'important');
       }
 
-      var editLink = card.querySelector('[wized="note-card-edit-link"]');
-      if (editLink) {
-        editLink.style.cursor = 'pointer';
-        editLink.addEventListener('click', function() {
-          window.location.href = 'https://sauce-share-4c2702.webflow.io/edit-note?type=community&id=' + note.id;
-        });
+      // ── Ownership-based visibility ───────────────────────────────────────
+      var isOwnNote   = note.user_id === userId;
+      var editLink    = card.querySelector('[wized="note-card-edit-link"]');
+      var usernameEl  = card.querySelector('[wized="community-note-username"]');
+      var favBtn      = card.querySelector('[wized="profile-note-favorite-btn"]');
+      var favActive   = card.querySelector('[wized="profile-note-favorite-active"]');
+      var favInactive = card.querySelector('[wized="profile-note-favorite-inactive"]');
+
+      if (isOwnNote) {
+        // Own note — show edit, hide username, hide heart
+        if (editLink) {
+          editLink.style.cursor = 'pointer';
+          editLink.style.removeProperty('display');
+          editLink.addEventListener('click', function() {
+            window.location.href = 'https://sauce-share-4c2702.webflow.io/edit-note?type=community&id=' + note.id;
+          });
+        }
+        if (usernameEl) usernameEl.style.setProperty('display', 'none', 'important');
+        if (favBtn)     favBtn.style.setProperty('display', 'none', 'important');
+      } else {
+        // Someone else's favorited note — hide edit, show username, show heart active
+        if (editLink)  editLink.style.setProperty('display', 'none', 'important');
+        if (usernameEl) {
+          usernameEl.textContent  = '@' + (note.profiles?.username || 'member');
+          usernameEl.style.cursor = 'pointer';
+          usernameEl.style.removeProperty('display');
+          usernameEl.addEventListener('click', function() {
+            window.location.href = '/member-profile?username=' +
+              encodeURIComponent(note.profiles?.username || '');
+          });
+        }
+        if (favBtn) {
+          favBtn.style.removeProperty('display');
+          favBtn.style.cursor = 'pointer';
+
+          // Start as active since it's in the favorites list
+          if (favActive)   favActive.style.setProperty('display',   'block', 'important');
+          if (favInactive) favInactive.style.setProperty('display', 'none',  'important');
+
+          var _busy      = false;
+          var _favorited = true;
+
+          document.addEventListener('click', function(e) {
+            if (!favBtn.contains(e.target)) return;
+            if (_busy) return;
+
+            if (_favorited) {
+              var confirmed = confirm('Remove this note from your favorites?');
+              if (!confirmed) return;
+            }
+
+            _busy = true;
+            favBtn.style.opacity = '0.5';
+
+            if (_favorited) {
+              _supabase
+                .from('note_favorites')
+                .delete()
+                .eq('user_id', userId)
+                .eq('note_id', note.id)
+                .then(function(res) {
+                  if (!res.error) {
+                    _favorited = false;
+                    if (favActive)   favActive.style.setProperty('display',   'none',  'important');
+                    if (favInactive) favInactive.style.setProperty('display', 'block', 'important');
+                    card.remove();
+                  }
+                  favBtn.style.opacity = '';
+                  _busy = false;
+                });
+            } else {
+              _supabase
+                .from('note_favorites')
+                .insert({ user_id: userId, note_id: note.id })
+                .then(function(res) {
+                  if (!res.error) {
+                    _favorited = true;
+                    if (favActive)   favActive.style.setProperty('display',   'block', 'important');
+                    if (favInactive) favInactive.style.setProperty('display', 'none',  'important');
+                  }
+                  favBtn.style.opacity = '';
+                  _busy = false;
+                });
+            }
+          }, true);
+        }
       }
 
+      // ── Accordion ────────────────────────────────────────────────────────
       var chevron    = card.querySelector('[wized="note-card-chevron"]');
       var chevronImg = chevron ? chevron.querySelector('img') : null;
       var engagement = card.querySelector('[wized="note-card-engagement"]');
@@ -651,7 +746,7 @@ window.addEventListener('load', async function() {
 
   // ── Shared favorite card builder ───────────────────────────────────────────
 
-  function buildFavoriteCard(recipe) {
+  function buildFavoriteCard(recipe, userId) {
     var templateEl       = document.querySelector('[wized="favorites-card-template"]');
     var drawerTemplateEl = document.querySelector('[wized="favorites-glance-drawer-template"]');
     if (!templateEl) return null;
@@ -726,10 +821,10 @@ window.addEventListener('load', async function() {
     var pinnedTemplate = drawer ? drawer.querySelector('[wized="recipe-pinned-note-template"]') : null;
     if (pinnedTemplate) pinnedTemplate.style.setProperty('display', 'none', 'important');
 
-    if (!!recipe.note_blurb && noteCardList && drawer) populatePinnedNote(drawer, recipe);
+    if (!!recipe.note_blurb && noteCardList && drawer) populatePinnedNote(drawer, recipe, userId);
 
     var recipeNotes = _notesByRecipeId[recipe.id] || [];
-    if (recipeNotes.length > 0 && noteCardList && drawer) populateCommunityNotes(drawer, recipeNotes);
+    if (recipeNotes.length > 0 && noteCardList && drawer) populateCommunityNotes(drawer, recipeNotes, userId);
 
     if (notesToggle && noteCardList) {
       var _notesOpen = false;
@@ -827,7 +922,6 @@ window.addEventListener('load', async function() {
       if (!isDelete && !isFavorites && !isSchedule && !isCollection) { alert('Please select an action.'); return; }
       if (isSchedule || isCollection) { alert('This feature is coming soon.'); return; }
 
-      // ── Add to favorites ────────────────────────────────────────────────
       if (isFavorites) {
         applyBtn.style.opacity = '0.5';
         applyBtn.style.pointerEvents = 'none';
@@ -857,7 +951,7 @@ window.addEventListener('load', async function() {
 
               if (newRecipes && listEl) {
                 newRecipes.slice().reverse().forEach(function(recipe) {
-                  var wrapper = buildFavoriteCard(recipe);
+                  var wrapper = buildFavoriteCard(recipe, userId);
                   if (wrapper) {
                     if (listEl.firstChild) listEl.insertBefore(wrapper, listEl.firstChild);
                     else listEl.appendChild(wrapper);
@@ -867,7 +961,6 @@ window.addEventListener('load', async function() {
             }
           }
 
-          // Reset checkboxes and radio
           document.querySelectorAll('[wized="recipe-checkbox"]').forEach(function(cb) { cb.checked = false; });
           _selectedRecipeIds = {};
           resetRadio(favRadio);
@@ -882,7 +975,6 @@ window.addEventListener('load', async function() {
         return;
       }
 
-      // ── Delete ──────────────────────────────────────────────────────────
       if (isDelete) {
         var confirmed = confirm(
           'Are you sure you want to delete ' + selectedIds.length +
@@ -1145,10 +1237,10 @@ window.addEventListener('load', async function() {
       var pinnedTemplate = drawer ? drawer.querySelector('[wized="recipe-pinned-note-template"]') : null;
       if (pinnedTemplate) pinnedTemplate.style.setProperty('display', 'none', 'important');
 
-      if (!!recipe.note_blurb && noteCardList) populatePinnedNote(drawer, recipe);
+      if (!!recipe.note_blurb && noteCardList) populatePinnedNote(drawer, recipe, userId);
 
       var recipeNotes = _notesByRecipeId[recipe.id] || [];
-      if (recipeNotes.length > 0 && noteCardList) populateCommunityNotes(drawer, recipeNotes);
+      if (recipeNotes.length > 0 && noteCardList) populateCommunityNotes(drawer, recipeNotes, userId);
 
       if (notesToggle && noteCardList) {
         var _notesOpen = false;
@@ -1290,7 +1382,7 @@ window.addEventListener('load', async function() {
     }
 
     recipes.forEach(function(recipe) {
-      var wrapper = buildFavoriteCard(recipe);
+      var wrapper = buildFavoriteCard(recipe, userId);
       if (wrapper) listEl.appendChild(wrapper);
     });
 
