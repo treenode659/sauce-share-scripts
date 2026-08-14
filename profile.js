@@ -499,7 +499,6 @@ window.addEventListener('load', async function() {
       if (imgWrapper) imgWrapper.style.setProperty('display', 'none', 'important');
     }
 
-    // ── Owner label — always "your note" on own pinned notes ─────────────
     var ownerLabel = card.querySelector('[wized="pinned-note-owner-label"]');
     if (ownerLabel) {
       ownerLabel.textContent  = 'your note';
@@ -507,11 +506,9 @@ window.addEventListener('load', async function() {
       ownerLabel.removeAttribute('href');
     }
 
-    // ── Heart — always hidden on own pinned notes ─────────────────────────
     var favBtn = card.querySelector('[wized="profile-note-favorite-btn"]');
     if (favBtn) favBtn.style.setProperty('display', 'none', 'important');
 
-    // ── Edit link ─────────────────────────────────────────────────────────
     var editLink = card.querySelector('[wized="pinned-note-edit-link"]');
     if (editLink) {
       editLink.style.cursor = 'pointer';
@@ -520,7 +517,6 @@ window.addEventListener('load', async function() {
       });
     }
 
-    // ── Accordion ─────────────────────────────────────────────────────────
     var chevron    = card.querySelector('[wized="pinned-note-chevron"]');
     var chevronImg = chevron ? chevron.querySelector('img') : null;
     var engagement = card.querySelector('[wized="pinned-note-engagement"]');
@@ -606,7 +602,6 @@ window.addEventListener('load', async function() {
         if (imgWrapper) imgWrapper.style.setProperty('display', 'none', 'important');
       }
 
-      // ── Ownership-based visibility ───────────────────────────────────────
       var isOwnNote   = note.user_id === userId;
       var editLink    = card.querySelector('[wized="note-card-edit-link"]');
       var usernameEl  = card.querySelector('[wized="community-note-username"]');
@@ -615,7 +610,6 @@ window.addEventListener('load', async function() {
       var favInactive = card.querySelector('[wized="profile-note-favorite-inactive"]');
 
       if (isOwnNote) {
-        // Own note — show edit, hide username, hide heart
         if (editLink) {
           editLink.style.cursor = 'pointer';
           editLink.style.removeProperty('display');
@@ -626,7 +620,6 @@ window.addEventListener('load', async function() {
         if (usernameEl) usernameEl.style.setProperty('display', 'none', 'important');
         if (favBtn)     favBtn.style.setProperty('display', 'none', 'important');
       } else {
-        // Someone else's favorited note — hide edit, show username, show heart active
         if (editLink)  editLink.style.setProperty('display', 'none', 'important');
         if (usernameEl) {
           usernameEl.textContent  = '@' + (note.profiles?.username || 'member');
@@ -640,8 +633,6 @@ window.addEventListener('load', async function() {
         if (favBtn) {
           favBtn.style.removeProperty('display');
           favBtn.style.cursor = 'pointer';
-
-          // Start as active since it's in the favorites list
           if (favActive)   favActive.style.setProperty('display',   'block', 'important');
           if (favInactive) favInactive.style.setProperty('display', 'none',  'important');
 
@@ -651,15 +642,12 @@ window.addEventListener('load', async function() {
           document.addEventListener('click', function(e) {
             if (!favBtn.contains(e.target)) return;
             if (_busy) return;
-
             if (_favorited) {
               var confirmed = confirm('Remove this note from your favorites?');
               if (!confirmed) return;
             }
-
             _busy = true;
             favBtn.style.opacity = '0.5';
-
             if (_favorited) {
               _supabase
                 .from('note_favorites')
@@ -694,7 +682,6 @@ window.addEventListener('load', async function() {
         }
       }
 
-      // ── Accordion ────────────────────────────────────────────────────────
       var chevron    = card.querySelector('[wized="note-card-chevron"]');
       var chevronImg = chevron ? chevron.querySelector('img') : null;
       var engagement = card.querySelector('[wized="note-card-engagement"]');
@@ -1095,23 +1082,18 @@ window.addEventListener('load', async function() {
               if (wrapper) wrapper.remove();
             });
             _selectedFavoriteIds = {};
-
             document.querySelectorAll('[wized="favorites-checkbox"]').forEach(function(cb) {
               cb.checked = false;
             });
-
             resetRadio(removeRadio);
-
             var listEl        = document.querySelector('[wized="favorites-list"]');
             var remaining     = listEl ? listEl.querySelectorAll('[data-favorite-recipe-id]') : [];
             var bulkActionsEl = document.querySelector('[wized="favorites-bulk-actions"]');
-
             if (remaining.length === 0) {
               var emptyEl = document.querySelector('[wized="favorites-empty"]');
               if (emptyEl) emptyEl.style.setProperty('display', 'block', 'important');
               if (bulkActionsEl) bulkActionsEl.style.setProperty('display', 'none', 'important');
             }
-
             closeBulkPanel();
             applyBtn.style.opacity       = '';
             applyBtn.style.pointerEvents = '';
@@ -1420,16 +1402,20 @@ window.addEventListener('load', async function() {
   // ── Boot ───────────────────────────────────────────────────────────────────
 
   try {
+    console.log('boot start');
     var { data: sessionData } = await _supabase.auth.getSession();
+    console.log('session fetched');
     var session = sessionData?.session;
     if (!session) { window.location.href = 'https://sauce-share-4c2702.webflow.io/sign-up'; return; }
 
+    console.log('fetching profile');
     var { data: profile, error } = await _supabase
       .from('profiles')
       .select('username, avatar_selection, subscription_tier, bio, favorite_food, country, social_instagram, social_tiktok, social_youtube, social_pinterest, created_at, community_guidelines_agreed_at')
       .eq('id', session.user.id)
       .single();
 
+    console.log('profile fetched', profile, error);
     if (error || !profile) { showError('Could not load your profile. Please try refreshing.'); return; }
 
     if (usernameEl) usernameEl.textContent = '@' + profile.username;
@@ -1442,19 +1428,26 @@ window.addEventListener('load', async function() {
     if (mEl) mEl.textContent = formatDate(profile.created_at);
 
     window._sauceProfile = profile;
+    console.log('_sauceProfile set');
 
-    try { initWelcomeModal(session.user.id); } catch (modalErr) {}
+    try { initWelcomeModal(session.user.id); } catch (modalErr) { console.log('modal err', modalErr); }
 
+    console.log('initing sections');
     initAboutSection(profile, session.user.id);
     initAvatarModal(profile, session.user.id);
     initPanelTabs();
     initBulkActions(session.user.id);
     initFavoriteBulkActions(session.user.id);
+    console.log('finishing loading');
     await finishLoading();
+    console.log('loading recipes');
     await loadProfileRecipes(session.user.id);
+    console.log('loading favorites');
     await loadFavoriteRecipes(session.user.id);
+    console.log('done');
 
   } catch (err) {
+    console.log('CAUGHT ERROR:', err.message, err.stack);
     showError('Something went wrong loading your profile. This may be due to a network issue. Please try refreshing.');
   }
 
