@@ -506,8 +506,12 @@ window.addEventListener('load', async function() {
       ownerLabel.removeAttribute('href');
     }
 
-    var favBtn = card.querySelector('[wized="profile-note-favorite-btn"]');
+    var favBtn = card.querySelector('[wized="profile-note-favorite-btn"], [wized="note-favorite-btn"]');
     if (favBtn) favBtn.style.setProperty('display', 'none', 'important');
+    ['profile-note-favorite-active','profile-note-favorite-inactive','note-favorite-active','note-favorite-inactive'].forEach(function(a) {
+      var el = card.querySelector('[wized="' + a + '"]');
+      if (el) el.style.setProperty('display', 'none', 'important');
+    });
 
     var editLink = card.querySelector('[wized="pinned-note-edit-link"]');
     if (editLink) {
