@@ -733,7 +733,7 @@ window.addEventListener('load', async function() {
 
   // ── Shared favorite card builder ───────────────────────────────────────────
 
-  function buildFavoriteCard(recipe, userId) {
+  function buildFavoriteCard(recipe, userId, favoritedNotes) {
     var templateEl       = document.querySelector('[wized="favorites-card-template"]');
     var drawerTemplateEl = document.querySelector('[wized="favorites-glance-drawer-template"]');
     if (!templateEl) return null;
@@ -810,7 +810,7 @@ window.addEventListener('load', async function() {
 
     if (!!recipe.note_blurb && noteCardList && drawer) populatePinnedNote(drawer, recipe, userId);
 
-    var recipeNotes = _notesByRecipeId[recipe.id] || [];
+    var recipeNotes = favoritedNotes || [];
     if (recipeNotes.length > 0 && noteCardList && drawer) populateCommunityNotes(drawer, recipeNotes, userId);
 
     if (notesToggle && noteCardList) {
@@ -864,7 +864,10 @@ window.addEventListener('load', async function() {
     var favRadio    = document.querySelector('[wized="bulk-action-favorites"]');
     var schedRadio  = document.querySelector('[wized="bulk-action-schedule"]');
     var collRadio   = document.querySelector('[wized="bulk-action-collection"]');
+    var bulkWrapper = document.querySelector('[wized="recipes-bulk-actions"]');
     var _bulkOpen   = false;
+
+    if (bulkWrapper) bulkWrapper.style.setProperty('display', 'none', 'important');
 
     function openBulkPanel() {
       if (!bulkContent || _bulkOpen) return;
@@ -933,12 +936,12 @@ window.addEventListener('load', async function() {
 
               var { data: newRecipes } = await _supabase
                 .from('recipes')
-                .select('id, recipe_title, slug, header_image, base_pairing, flavor_profile, ingredients, directions, note_blurb, note_tried, note_details, photo_url')
+                .select('id, recipe_title, slug, header_image, base_pairing, flavor_profile, ingredients, directions, note_blurb, note_tried, note_details, photo_url, user_id')
                 .in('id', toAdd);
 
               if (newRecipes && listEl) {
                 newRecipes.slice().reverse().forEach(function(recipe) {
-                  var wrapper = buildFavoriteCard(recipe, userId);
+                  var wrapper = buildFavoriteCard(recipe, userId, []);
                   if (wrapper) {
                     if (listEl.firstChild) listEl.insertBefore(wrapper, listEl.firstChild);
                     else listEl.appendChild(wrapper);
@@ -989,6 +992,7 @@ window.addEventListener('load', async function() {
             if (remaining.length === 0) {
               var emptyEl = document.querySelector('[wized="recipes-empty-uploads"]');
               if (emptyEl) emptyEl.style.setProperty('display', 'block', 'important');
+              if (bulkWrapper) bulkWrapper.style.setProperty('display', 'none', 'important');
             }
             resetRadio(deleteRadio);
             closeBulkPanel();
@@ -1111,6 +1115,8 @@ window.addEventListener('load', async function() {
     var emptyEl          = document.querySelector('[wized="recipes-empty-uploads"]');
     var seeMoreBtn       = document.querySelector('[wized="recipes-see-more-btn"]');
     var seeLessBtn       = document.querySelector('[wized="recipes-see-less-btn"]');
+    var showButtonsWrapper   = document.querySelector('[wized="recipes-show-buttons-wrapper"]');
+    var bulkActionsEl    = document.querySelector('[wized="recipes-bulk-actions"]');
     if (!listEl || !templateEl) return;
 
     templateEl.style.setProperty('display', 'none', 'important');
@@ -1118,6 +1124,7 @@ window.addEventListener('load', async function() {
     if (emptyEl)          emptyEl.style.setProperty('display', 'none', 'important');
     if (seeMoreBtn)       seeMoreBtn.style.setProperty('display', 'none', 'important');
     if (seeLessBtn)       seeLessBtn.style.setProperty('display', 'none', 'important');
+    if (showButtonsWrapper) showButtonsWrapper.style.setProperty('display', 'none', 'important');
 
     var ingredientRowTemplate = templateEl.querySelector('[wized="recipe-ingredient-row-template"]');
     var directionRowTemplate  = templateEl.querySelector('[wized="recipe-direction-row-template"]');
@@ -1134,6 +1141,8 @@ window.addEventListener('load', async function() {
       if (emptyEl) emptyEl.style.setProperty('display', 'block', 'important');
       return;
     }
+
+    if (bulkActionsEl) bulkActionsEl.style.setProperty('display', 'flex', 'important');
 
     var { data: allCommunityNotes } = await _supabase
       .from('notes')
@@ -1289,6 +1298,7 @@ window.addEventListener('load', async function() {
     showPage(currentlyShown);
 
     if (recipes.length > PAGE_SIZE) {
+      if (showButtonsWrapper) showButtonsWrapper.style.setProperty('display', 'flex', 'important');
       if (seeMoreBtn) seeMoreBtn.style.setProperty('display', 'block', 'important');
     }
     if (seeMoreBtn) {
@@ -1304,7 +1314,10 @@ window.addEventListener('load', async function() {
         currentlyShown = PAGE_SIZE;
         showPage(currentlyShown);
         seeLessBtn.style.setProperty('display', 'none', 'important');
-        if (seeMoreBtn && recipes.length > PAGE_SIZE) seeMoreBtn.style.setProperty('display', 'block', 'important');
+        if (recipes.length > PAGE_SIZE) {
+          if (seeMoreBtn) seeMoreBtn.style.setProperty('display', 'block', 'important');
+          if (showButtonsWrapper) showButtonsWrapper.style.setProperty('display', 'flex', 'important');
+        }
       });
     }
   }
@@ -1333,12 +1346,13 @@ window.addEventListener('load', async function() {
 
     var { data: favorites, error } = await _supabase
       .from('favorites')
-      .select('recipe_id, created_at, recipes(id, recipe_title, slug, header_image, base_pairing, flavor_profile, ingredients, directions, note_blurb, note_tried, note_details, photo_url)')
+      .select('recipe_id, created_at, recipes(id, recipe_title, slug, header_image, base_pairing, flavor_profile, ingredients, directions, note_blurb, note_tried, note_details, photo_url, user_id)')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
     if (error || !favorites || favorites.length === 0) {
       if (emptyEl) emptyEl.style.setProperty('display', 'block', 'important');
+      window._favoritedRecipeIds = new Set();
       return;
     }
 
@@ -1348,7 +1362,27 @@ window.addEventListener('load', async function() {
 
     if (recipes.length === 0) {
       if (emptyEl) emptyEl.style.setProperty('display', 'block', 'important');
+      window._favoritedRecipeIds = new Set();
       return;
+    }
+
+    // Expose favorited recipe IDs so loadFavoriteNotes can skip them
+    window._favoritedRecipeIds = new Set(recipes.map(function(r) { return r.id; }));
+
+    // Fetch note favorites so drawers only show notes the user specifically favorited
+    var _favoritedNotesByRecipeId = {};
+    var { data: noteFavs } = await _supabase
+      .from('note_favorites')
+      .select('note_id, notes(id, recipe_id, user_id, sauce_thoughts, tried_it_on, meal_details, photo_url, created_at, profiles(username, avatar_selection))')
+      .eq('user_id', userId);
+
+    if (noteFavs) {
+      noteFavs.forEach(function(row) {
+        if (!row.notes) return;
+        var note = row.notes;
+        if (!_favoritedNotesByRecipeId[note.recipe_id]) _favoritedNotesByRecipeId[note.recipe_id] = [];
+        _favoritedNotesByRecipeId[note.recipe_id].push(note);
+      });
     }
 
     if (bulkActionsEl) bulkActionsEl.style.setProperty('display', 'flex', 'important');
@@ -1364,7 +1398,8 @@ window.addEventListener('load', async function() {
     }
 
     recipes.forEach(function(recipe) {
-      var wrapper = buildFavoriteCard(recipe, userId);
+      var favNotesForRecipe = _favoritedNotesByRecipeId[recipe.id] || [];
+      var wrapper = buildFavoriteCard(recipe, userId, favNotesForRecipe);
       if (wrapper) listEl.appendChild(wrapper);
     });
 
@@ -1397,6 +1432,53 @@ window.addEventListener('load', async function() {
         }
       });
     }
+  }
+
+  // ── Load favorite notes ────────────────────────────────────────────────────
+
+  async function loadFavoriteNotes(userId) {
+    var listEl = document.querySelector('[wized="favorites-list"]');
+    if (!listEl) return;
+
+    var { data: noteFavs, error } = await _supabase
+      .from('note_favorites')
+      .select(`
+        note_id,
+        notes(
+          id, recipe_id, user_id, sauce_thoughts, tried_it_on, meal_details, photo_url, created_at,
+          profiles(username, avatar_selection),
+          recipes(id, recipe_title, slug, header_image, base_pairing, flavor_profile, ingredients, directions, note_blurb, note_tried, note_details, photo_url, user_id)
+        )
+      `)
+      .eq('user_id', userId);
+
+    if (error || !noteFavs || noteFavs.length === 0) return;
+
+    // Group notes by recipe_id, skipping recipes the user already favorited
+    var recipeMap = {};
+    noteFavs.forEach(function(row) {
+      if (!row.notes || !row.notes.recipes) return;
+      var note   = row.notes;
+      var recipe = note.recipes;
+
+      // Skip if user already favorited this recipe — covered by loadFavoriteRecipes
+      if (window._favoritedRecipeIds && window._favoritedRecipeIds.has(recipe.id)) return;
+
+      // Skip if a card for this recipe already exists in the DOM
+      if (document.querySelector('[data-favorite-recipe-id="' + recipe.id + '"]')) return;
+
+      if (!recipeMap[recipe.id]) {
+        recipeMap[recipe.id] = { recipe: recipe, notes: [] };
+      }
+      recipeMap[recipe.id].notes.push(note);
+    });
+
+    // Render one card per unique non-favorited recipe
+    Object.keys(recipeMap).forEach(function(recipeId) {
+      var entry   = recipeMap[recipeId];
+      var wrapper = buildFavoriteCard(entry.recipe, userId, entry.notes);
+      if (wrapper) listEl.appendChild(wrapper);
+    });
   }
 
   // ── Boot ───────────────────────────────────────────────────────────────────
@@ -1444,6 +1526,7 @@ window.addEventListener('load', async function() {
     await loadProfileRecipes(session.user.id);
     console.log('loading favorites');
     await loadFavoriteRecipes(session.user.id);
+    await loadFavoriteNotes(session.user.id);
     console.log('done');
 
   } catch (err) {
