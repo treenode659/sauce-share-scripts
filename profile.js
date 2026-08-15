@@ -529,9 +529,10 @@ window.addEventListener('load', async function() {
     }
 
     // Heart — hidden for owner, decorative toggle for non-owner
-    var favBtn      = card.querySelector('[wized="profile-note-favorite-btn"]');
-    var favActive   = card.querySelector('[wized="profile-note-favorite-active"]');
-    var favInactive = card.querySelector('[wized="profile-note-favorite-inactive"]');
+    // Try profile-specific attribute first, fall back to recipe-page attribute name
+    var favBtn      = card.querySelector('[wized="profile-note-favorite-btn"]')    || card.querySelector('[wized="note-favorite-btn"]');
+    var favActive   = card.querySelector('[wized="profile-note-favorite-active"]') || card.querySelector('[wized="note-favorite-active"]');
+    var favInactive = card.querySelector('[wized="profile-note-favorite-inactive"]') || card.querySelector('[wized="note-favorite-inactive"]');
 
     if (isOwnRecipe) {
       if (favBtn) favBtn.style.setProperty('display', 'none', 'important');
@@ -639,9 +640,10 @@ window.addEventListener('load', async function() {
       var isOwnNote   = note.user_id === userId;
       var editLink    = card.querySelector('[wized="note-card-edit-link"]');
       var usernameEl  = card.querySelector('[wized="community-note-username"]');
-      var favBtn      = card.querySelector('[wized="profile-note-favorite-btn"]');
-      var favActive   = card.querySelector('[wized="profile-note-favorite-active"]');
-      var favInactive = card.querySelector('[wized="profile-note-favorite-inactive"]');
+      // Try profile-specific attribute first, fall back to recipe-page attribute name
+      var favBtn      = card.querySelector('[wized="profile-note-favorite-btn"]')    || card.querySelector('[wized="note-favorite-btn"]');
+      var favActive   = card.querySelector('[wized="profile-note-favorite-active"]') || card.querySelector('[wized="note-favorite-active"]');
+      var favInactive = card.querySelector('[wized="profile-note-favorite-inactive"]') || card.querySelector('[wized="note-favorite-inactive"]');
 
       if (isOwnNote) {
         if (editLink) {
@@ -843,7 +845,7 @@ window.addEventListener('load', async function() {
 
     if (instructions) instructions.style.setProperty('display', 'none', 'important');
     if (notesSection) notesSection.style.setProperty('display', 'none', 'important');
-    if (noteCardList) noteCardList.style.setProperty('display', 'none', 'important');
+    // noteCardList is NOT pre-hidden here — it will be shown based on content after population
 
     var communityTemplate = drawer ? drawer.querySelector('[wized="recipe-community-note-template"]') : null;
     if (communityTemplate) communityTemplate.style.setProperty('display', 'none', 'important');
@@ -857,12 +859,19 @@ window.addEventListener('load', async function() {
     var recipeNotes = favoritedNotes || [];
     if (recipeNotes.length > 0 && noteCardList && drawer) populateCommunityNotes(drawer, recipeNotes, userId);
 
-    // Determine whether there is any note content to show
+    // Determine whether there is any note content
     var hasNoteContent = !!recipe.note_blurb || recipeNotes.length > 0;
 
+    // If no note content, hide noteCardList; otherwise leave it at CSS default (visible)
+    if (!hasNoteContent && noteCardList) {
+      noteCardList.style.setProperty('display', 'none', 'important');
+    }
+
+    // Notes toggle — starts "open" if there's content so notes are visible immediately
     if (notesToggle && noteCardList) {
-      var _notesOpen = false;
+      var _notesOpen = hasNoteContent;
       var notesIcon  = notesToggle.querySelector('img');
+      if (notesIcon && hasNoteContent) notesIcon.style.transform = 'rotate(180deg)';
       document.addEventListener('click', function(e) {
         if (!notesToggle.contains(e.target)) return;
         _notesOpen = !_notesOpen;
@@ -872,6 +881,21 @@ window.addEventListener('load', async function() {
           notesIcon.style.transform  = _notesOpen ? 'rotate(180deg)' : 'rotate(0deg)';
         }
       }, true);
+    }
+
+    // MutationObserver on the drawer — whenever it becomes visible (regardless of
+    // what mechanism opens it — our code, Wized, or Webflow), ensure notesSection
+    // and noteCardList are shown if there's note content
+    if (drawer && hasNoteContent) {
+      var drawerObserver = new MutationObserver(function() {
+        var drawerVisible = window.getComputedStyle(drawer).display !== 'none';
+        if (drawerVisible) {
+          if (instructions) instructions.style.setProperty('display', 'flex', 'important');
+          if (notesSection)  notesSection.style.setProperty('display', 'flex', 'important');
+          if (noteCardList)  noteCardList.style.setProperty('display', 'flex', 'important');
+        }
+      });
+      drawerObserver.observe(drawer, { attributes: true, attributeFilter: ['style', 'class'] });
     }
 
     if (glanceBtn && drawer) {
@@ -887,10 +911,7 @@ window.addEventListener('load', async function() {
           drawer.style.setProperty('display', 'block', 'important');
           if (instructions) instructions.style.setProperty('display', 'flex', 'important');
           if (notesSection)  notesSection.style.setProperty('display', 'flex', 'important');
-          // Auto-show noteCardList when opening if there's note content
-          if (hasNoteContent && noteCardList) {
-            noteCardList.style.setProperty('display', 'flex', 'important');
-          }
+          if (hasNoteContent && noteCardList) noteCardList.style.setProperty('display', 'flex', 'important');
           if (glanceIcon) glanceIcon.style.transform = 'rotate(180deg)';
         }
       });
@@ -1582,6 +1603,20 @@ window.addEventListener('load', async function() {
     await loadFavoriteRecipes(session.user.id);
     await loadFavoriteNotes(session.user.id);
     console.log('done');
+
+    // Repeatedly enforce favorites-empty hidden state — Wized may re-show it
+    // after our async code finishes if its own query returns empty
+    function hideFavEmptyIfHasCards() {
+      var favListEl  = document.querySelector('[wized="favorites-list"]');
+      var favEmptyEl = document.querySelector('[wized="favorites-empty"]');
+      if (favListEl && favEmptyEl && favListEl.querySelectorAll('[data-favorite-recipe-id]').length > 0) {
+        favEmptyEl.style.setProperty('display', 'none', 'important');
+      }
+    }
+    setTimeout(hideFavEmptyIfHasCards, 0);
+    setTimeout(hideFavEmptyIfHasCards, 300);
+    setTimeout(hideFavEmptyIfHasCards, 800);
+    setTimeout(hideFavEmptyIfHasCards, 2000);
 
   } catch (err) {
     console.log('CAUGHT ERROR:', err.message, err.stack);
