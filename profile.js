@@ -499,26 +499,56 @@ window.addEventListener('load', async function() {
       if (imgWrapper) imgWrapper.style.setProperty('display', 'none', 'important');
     }
 
+    var isOwnRecipe = recipe.user_id === userId;
+
+    // Owner label — only show "your note" if user owns the recipe
     var ownerLabel = card.querySelector('[wized="pinned-note-owner-label"]');
     if (ownerLabel) {
-      ownerLabel.textContent  = 'your note';
-      ownerLabel.style.cursor = 'default';
-      ownerLabel.removeAttribute('href');
+      if (isOwnRecipe) {
+        ownerLabel.textContent  = 'your note';
+        ownerLabel.style.cursor = 'default';
+        ownerLabel.removeAttribute('href');
+        ownerLabel.style.removeProperty('display');
+      } else {
+        ownerLabel.style.setProperty('display', 'none', 'important');
+      }
     }
 
-    var favBtn = card.querySelector('[wized="profile-note-favorite-btn"], [wized="note-favorite-btn"]');
-    if (favBtn) favBtn.style.setProperty('display', 'none', 'important');
-    ['profile-note-favorite-active','profile-note-favorite-inactive','note-favorite-active','note-favorite-inactive'].forEach(function(a) {
-      var el = card.querySelector('[wized="' + a + '"]');
-      if (el) el.style.setProperty('display', 'none', 'important');
-    });
-
+    // Edit link — only for owner
     var editLink = card.querySelector('[wized="pinned-note-edit-link"]');
     if (editLink) {
-      editLink.style.cursor = 'pointer';
-      editLink.addEventListener('click', function() {
-        window.location.href = 'https://sauce-share-4c2702.webflow.io/edit-note?type=pinned&id=' + recipe.id;
-      });
+      if (isOwnRecipe) {
+        editLink.style.cursor = 'pointer';
+        editLink.style.removeProperty('display');
+        editLink.addEventListener('click', function() {
+          window.location.href = 'https://sauce-share-4c2702.webflow.io/edit-note?type=pinned&id=' + recipe.id;
+        });
+      } else {
+        editLink.style.setProperty('display', 'none', 'important');
+      }
+    }
+
+    // Heart — hidden for owner, decorative toggle for non-owner
+    var favBtn      = card.querySelector('[wized="profile-note-favorite-btn"]');
+    var favActive   = card.querySelector('[wized="profile-note-favorite-active"]');
+    var favInactive = card.querySelector('[wized="profile-note-favorite-inactive"]');
+
+    if (isOwnRecipe) {
+      if (favBtn) favBtn.style.setProperty('display', 'none', 'important');
+    } else {
+      if (favBtn) {
+        favBtn.style.removeProperty('display');
+        favBtn.style.cursor = 'pointer';
+        if (favActive)   favActive.style.setProperty('display',   'none',  'important');
+        if (favInactive) favInactive.style.setProperty('display', 'block', 'important');
+
+        var _pinnedActive = false;
+        favBtn.addEventListener('click', function() {
+          _pinnedActive = !_pinnedActive;
+          if (favActive)   favActive.style.setProperty('display',   _pinnedActive ? 'block' : 'none',  'important');
+          if (favInactive) favInactive.style.setProperty('display', _pinnedActive ? 'none'  : 'block', 'important');
+        });
+      }
     }
 
     var chevron    = card.querySelector('[wized="pinned-note-chevron"]');
@@ -643,8 +673,8 @@ window.addEventListener('load', async function() {
           var _busy      = false;
           var _favorited = true;
 
-          document.addEventListener('click', function(e) {
-            if (!favBtn.contains(e.target)) return;
+          // Direct listener on the button — avoids document capture closure mismatch on clones
+          favBtn.addEventListener('click', function() {
             if (_busy) return;
             if (_favorited) {
               var confirmed = confirm('Remove this note from your favorites?');
@@ -682,7 +712,7 @@ window.addEventListener('load', async function() {
                   _busy = false;
                 });
             }
-          }, true);
+          });
         }
       }
 
@@ -812,6 +842,7 @@ window.addEventListener('load', async function() {
     var pinnedTemplate = drawer ? drawer.querySelector('[wized="recipe-pinned-note-template"]') : null;
     if (pinnedTemplate) pinnedTemplate.style.setProperty('display', 'none', 'important');
 
+    // Always show pinned note if one exists
     if (!!recipe.note_blurb && noteCardList && drawer) populatePinnedNote(drawer, recipe, userId);
 
     var recipeNotes = favoritedNotes || [];
@@ -979,10 +1010,8 @@ window.addEventListener('load', async function() {
         applyBtn.style.pointerEvents = 'none';
         try {
           var { error: deleteError } = await _supabase
-            .from('recipes')
-            .delete()
-            .in('id', selectedIds)
-            .eq('user_id', userId);
+            .from('recipes').delete()
+            .in('id', selectedIds).eq('user_id', userId);
           if (deleteError) {
             alert('Could not delete recipes. Please try again.');
           } else {
@@ -1074,11 +1103,8 @@ window.addEventListener('load', async function() {
       applyBtn.style.opacity       = '0.5';
       applyBtn.style.pointerEvents = 'none';
 
-      _supabase
-        .from('favorites')
-        .delete()
-        .in('recipe_id', selectedIds)
-        .eq('user_id', userId)
+      _supabase.from('favorites').delete()
+        .in('recipe_id', selectedIds).eq('user_id', userId)
         .then(function(res) {
           if (res.error) {
             alert('Could not remove favorites. Please try again.');
@@ -1113,21 +1139,21 @@ window.addEventListener('load', async function() {
   // ── Load recipes ───────────────────────────────────────────────────────────
 
   async function loadProfileRecipes(userId) {
-    var listEl           = document.querySelector('[wized="recipes-list"]');
-    var templateEl       = document.querySelector('[wized="recipe-card-template"]');
-    var drawerTemplateEl = document.querySelector('[wized="recipe-glance-drawer-template"]');
-    var emptyEl          = document.querySelector('[wized="recipes-empty-uploads"]');
-    var seeMoreBtn       = document.querySelector('[wized="recipes-see-more-btn"]');
-    var seeLessBtn       = document.querySelector('[wized="recipes-see-less-btn"]');
-    var showButtonsWrapper   = document.querySelector('[wized="recipes-show-buttons-wrapper"]');
-    var bulkActionsEl    = document.querySelector('[wized="recipes-bulk-actions"]');
+    var listEl             = document.querySelector('[wized="recipes-list"]');
+    var templateEl         = document.querySelector('[wized="recipe-card-template"]');
+    var drawerTemplateEl   = document.querySelector('[wized="recipe-glance-drawer-template"]');
+    var emptyEl            = document.querySelector('[wized="recipes-empty-uploads"]');
+    var seeMoreBtn         = document.querySelector('[wized="recipes-see-more-btn"]');
+    var seeLessBtn         = document.querySelector('[wized="recipes-see-less-btn"]');
+    var showButtonsWrapper = document.querySelector('[wized="recipes-show-buttons-wrapper"]');
+    var bulkActionsEl      = document.querySelector('[wized="recipes-bulk-actions"]');
     if (!listEl || !templateEl) return;
 
     templateEl.style.setProperty('display', 'none', 'important');
-    if (drawerTemplateEl) drawerTemplateEl.style.setProperty('display', 'none', 'important');
-    if (emptyEl)          emptyEl.style.setProperty('display', 'none', 'important');
-    if (seeMoreBtn)       seeMoreBtn.style.setProperty('display', 'none', 'important');
-    if (seeLessBtn)       seeLessBtn.style.setProperty('display', 'none', 'important');
+    if (drawerTemplateEl)   drawerTemplateEl.style.setProperty('display', 'none', 'important');
+    if (emptyEl)            emptyEl.style.setProperty('display', 'none', 'important');
+    if (seeMoreBtn)         seeMoreBtn.style.setProperty('display', 'none', 'important');
+    if (seeLessBtn)         seeLessBtn.style.setProperty('display', 'none', 'important');
     if (showButtonsWrapper) showButtonsWrapper.style.setProperty('display', 'none', 'important');
 
     var ingredientRowTemplate = templateEl.querySelector('[wized="recipe-ingredient-row-template"]');
@@ -1333,12 +1359,16 @@ window.addEventListener('load', async function() {
     var templateEl         = document.querySelector('[wized="favorites-card-template"]');
     var drawerTemplateEl   = document.querySelector('[wized="favorites-glance-drawer-template"]');
     var emptyEl            = document.querySelector('[wized="favorites-empty"]');
+    var favNotesEmptyEl    = document.querySelector('[wized="favorited-notes-empty"]');
     var seeMoreBtn         = document.querySelector('[wized="favorites-see-more-btn"]');
     var seeLessBtn         = document.querySelector('[wized="favorites-see-less-btn"]');
     var showButtonsWrapper = document.querySelector('[wized="favorites-show-buttons-wrapper"]');
     var bulkActionsEl      = document.querySelector('[wized="favorites-bulk-actions"]');
 
     if (!listEl || !templateEl) return;
+
+    // Always hide favorited-notes-empty on load — shown only by loadFavoriteNotes if needed
+    if (favNotesEmptyEl) favNotesEmptyEl.style.setProperty('display', 'none', 'important');
 
     if (bulkActionsEl)      bulkActionsEl.style.setProperty('display', 'none', 'important');
     if (showButtonsWrapper) showButtonsWrapper.style.setProperty('display', 'none', 'important');
@@ -1441,7 +1471,8 @@ window.addEventListener('load', async function() {
   // ── Load favorite notes ────────────────────────────────────────────────────
 
   async function loadFavoriteNotes(userId) {
-    var listEl = document.querySelector('[wized="favorites-list"]');
+    var listEl          = document.querySelector('[wized="favorites-list"]');
+    var favNotesEmptyEl = document.querySelector('[wized="favorited-notes-empty"]');
     if (!listEl) return;
 
     var { data: noteFavs, error } = await _supabase
@@ -1458,7 +1489,7 @@ window.addEventListener('load', async function() {
 
     if (error || !noteFavs || noteFavs.length === 0) return;
 
-    // Group notes by recipe_id, skipping recipes the user already favorited
+    // Group notes by recipe, skipping recipes the user already favorited
     var recipeMap = {};
     noteFavs.forEach(function(row) {
       if (!row.notes || !row.notes.recipes) return;
@@ -1477,7 +1508,8 @@ window.addEventListener('load', async function() {
       recipeMap[recipe.id].notes.push(note);
     });
 
-    // Render one card per unique non-favorited recipe
+    if (Object.keys(recipeMap).length === 0) return;
+
     Object.keys(recipeMap).forEach(function(recipeId) {
       var entry   = recipeMap[recipeId];
       var wrapper = buildFavoriteCard(entry.recipe, userId, entry.notes);
