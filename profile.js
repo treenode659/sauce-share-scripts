@@ -1534,6 +1534,7 @@ window.addEventListener('load', async function() {
     // favorites, we need to show them here.
     var bulkActionsEl = document.querySelector('[wized="favorites-bulk-actions"]');
     if (bulkActionsEl) bulkActionsEl.style.setProperty('display', 'flex', 'important');
+  }
 
   // ── Boot ───────────────────────────────────────────────────────────────────
 
