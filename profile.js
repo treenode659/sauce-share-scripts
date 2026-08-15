@@ -501,21 +501,18 @@ window.addEventListener('load', async function() {
 
     var isOwnRecipe = recipe.user_id === userId;
 
-    // Owner label — only show "your note" if user owns the recipe
+    // Owner label — only show for recipe owner
     var ownerLabel = card.querySelector('[wized="pinned-note-owner-label"]');
     if (ownerLabel) {
       if (isOwnRecipe) {
-        ownerLabel.textContent  = 'your note';
-        ownerLabel.style.cursor = 'default';
-        ownerLabel.removeAttribute('href');
         ownerLabel.style.removeProperty('display');
       } else {
         ownerLabel.style.setProperty('display', 'none', 'important');
       }
     }
 
-    // Edit link — only for owner
-    var editLink = card.querySelector('[wized="pinned-note-edit-link"]');
+    // Edit link uses note-card-edit-link (same as community notes in this template)
+    var editLink = card.querySelector('[wized="note-card-edit-link"]');
     if (editLink) {
       if (isOwnRecipe) {
         editLink.style.cursor = 'pointer';
@@ -528,29 +525,14 @@ window.addEventListener('load', async function() {
       }
     }
 
-    // Heart — hidden for owner, decorative toggle for non-owner
-    // Try profile-specific attribute first, fall back to recipe-page attribute name
-    var favBtn      = card.querySelector('[wized="profile-note-favorite-btn"]')    || card.querySelector('[wized="note-favorite-btn"]');
-    var favActive   = card.querySelector('[wized="profile-note-favorite-active"]') || card.querySelector('[wized="note-favorite-active"]');
-    var favInactive = card.querySelector('[wized="profile-note-favorite-inactive"]') || card.querySelector('[wized="note-favorite-inactive"]');
-
-    if (isOwnRecipe) {
-      if (favBtn) favBtn.style.setProperty('display', 'none', 'important');
-    } else {
-      if (favBtn) {
-        favBtn.style.removeProperty('display');
-        favBtn.style.cursor = 'pointer';
-        if (favActive)   favActive.style.setProperty('display',   'none',  'important');
-        if (favInactive) favInactive.style.setProperty('display', 'block', 'important');
-
-        var _pinnedActive = false;
-        favBtn.addEventListener('click', function() {
-          _pinnedActive = !_pinnedActive;
-          if (favActive)   favActive.style.setProperty('display',   _pinnedActive ? 'block' : 'none',  'important');
-          if (favInactive) favInactive.style.setProperty('display', _pinnedActive ? 'none'  : 'block', 'important');
-        });
-      }
-    }
+    // Hearts have no wized attribute — find by class. Always hide on pinned notes
+    // (pinned notes live on recipes table, not note_favorites, so can't be individually favorited)
+    var pinnedFavWrap    = card.querySelector('.profile-recipes_note-inactive, .profile-recipes_note-active')?.parentElement || null;
+    var pinnedFavActive  = card.querySelector('.profile-recipes_note-active');
+    var pinnedFavInactive= card.querySelector('.profile-recipes_note-inactive');
+    if (pinnedFavWrap)    pinnedFavWrap.style.setProperty('display', 'none', 'important');
+    if (pinnedFavActive)  pinnedFavActive.style.setProperty('display', 'none', 'important');
+    if (pinnedFavInactive)pinnedFavInactive.style.setProperty('display', 'none', 'important');
 
     var chevron    = card.querySelector('[wized="pinned-note-chevron"]');
     var chevronImg = chevron ? chevron.querySelector('img') : null;
@@ -640,10 +622,10 @@ window.addEventListener('load', async function() {
       var isOwnNote   = note.user_id === userId;
       var editLink    = card.querySelector('[wized="note-card-edit-link"]');
       var usernameEl  = card.querySelector('[wized="community-note-username"]');
-      // Try profile-specific attribute first, fall back to recipe-page attribute name
-      var favBtn      = card.querySelector('[wized="profile-note-favorite-btn"]')    || card.querySelector('[wized="note-favorite-btn"]');
-      var favActive   = card.querySelector('[wized="profile-note-favorite-active"]') || card.querySelector('[wized="note-favorite-active"]');
-      var favInactive = card.querySelector('[wized="profile-note-favorite-inactive"]') || card.querySelector('[wized="note-favorite-inactive"]');
+      // Hearts have no wized attribute — find by class
+      var favBtnWrap  = card.querySelector('.profile-recipes_note-inactive, .profile-recipes_note-active')?.parentElement || null;
+      var favInactive = card.querySelector('.profile-recipes_note-inactive');
+      var favActive   = card.querySelector('.profile-recipes_note-active');
 
       if (isOwnNote) {
         if (editLink) {
@@ -654,7 +636,7 @@ window.addEventListener('load', async function() {
           });
         }
         if (usernameEl) usernameEl.style.setProperty('display', 'none', 'important');
-        if (favBtn)     favBtn.style.setProperty('display', 'none', 'important');
+        if (favBtnWrap) favBtnWrap.style.setProperty('display', 'none', 'important');
       } else {
         if (editLink)  editLink.style.setProperty('display', 'none', 'important');
         if (usernameEl) {
@@ -666,9 +648,9 @@ window.addEventListener('load', async function() {
               encodeURIComponent(note.profiles?.username || '');
           });
         }
-        if (favBtn) {
-          favBtn.style.removeProperty('display');
-          favBtn.style.cursor = 'pointer';
+        if (favBtnWrap) {
+          favBtnWrap.style.removeProperty('display');
+          favBtnWrap.style.cursor = 'pointer';
           if (favActive)   favActive.style.setProperty('display',   'block', 'important');
           if (favInactive) favInactive.style.setProperty('display', 'none',  'important');
 
@@ -676,14 +658,15 @@ window.addEventListener('load', async function() {
           var _favorited = true;
 
           // Direct listener on the button — avoids document capture closure mismatch on clones
-          favBtn.addEventListener('click', function() {
+          favBtnWrap.addEventListener('click', function(e) {
+            e.stopPropagation();
             if (_busy) return;
             if (_favorited) {
               var confirmed = confirm('Remove this note from your favorites?');
               if (!confirmed) return;
             }
             _busy = true;
-            favBtn.style.opacity = '0.5';
+            favBtnWrap.style.opacity = '0.5';
             if (_favorited) {
               _supabase
                 .from('note_favorites')
@@ -693,20 +676,11 @@ window.addEventListener('load', async function() {
                 .then(function(res) {
                   if (!res.error) {
                     _favorited = false;
+                    if (favActive)   favActive.style.setProperty('display',   'none',  'important');
+                    if (favInactive) favInactive.style.setProperty('display', 'block', 'important');
                     card.remove();
-                    // If this recipe card exists only because of note favorites
-                    // (not a recipe the user favorited), remove the whole wrapper
-                    // once its noteCardList is empty
-                    var recipeWrapper = document.querySelector('[data-favorite-recipe-id="' + recipe.id + '"]');
-                    if (recipeWrapper) {
-                      var isRecipeFavorite = window._favoritedRecipeIds && window._favoritedRecipeIds.has(recipe.id);
-                      if (!isRecipeFavorite) {
-                        var remainingNotes = recipeWrapper.querySelectorAll('[data-profile-note-id]');
-                        if (remainingNotes.length === 0) recipeWrapper.remove();
-                      }
-                    }
                   }
-                  favBtn.style.opacity = '';
+                  favBtnWrap.style.opacity = '';
                   _busy = false;
                 });
             } else {
@@ -719,7 +693,7 @@ window.addEventListener('load', async function() {
                     if (favActive)   favActive.style.setProperty('display',   'block', 'important');
                     if (favInactive) favInactive.style.setProperty('display', 'none',  'important');
                   }
-                  favBtn.style.opacity = '';
+                  favBtnWrap.style.opacity = '';
                   _busy = false;
                 });
             }
