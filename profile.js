@@ -691,9 +691,18 @@ window.addEventListener('load', async function() {
                 .then(function(res) {
                   if (!res.error) {
                     _favorited = false;
-                    if (favActive)   favActive.style.setProperty('display',   'none',  'important');
-                    if (favInactive) favInactive.style.setProperty('display', 'block', 'important');
                     card.remove();
+                    // If this recipe card exists only because of note favorites
+                    // (not a recipe the user favorited), remove the whole wrapper
+                    // once its noteCardList is empty
+                    var recipeWrapper = document.querySelector('[data-favorite-recipe-id="' + recipe.id + '"]');
+                    if (recipeWrapper) {
+                      var isRecipeFavorite = window._favoritedRecipeIds && window._favoritedRecipeIds.has(recipe.id);
+                      if (!isRecipeFavorite) {
+                        var remainingNotes = recipeWrapper.querySelectorAll('[data-profile-note-id]');
+                        if (remainingNotes.length === 0) recipeWrapper.remove();
+                      }
+                    }
                   }
                   favBtn.style.opacity = '';
                   _busy = false;
@@ -848,6 +857,9 @@ window.addEventListener('load', async function() {
     var recipeNotes = favoritedNotes || [];
     if (recipeNotes.length > 0 && noteCardList && drawer) populateCommunityNotes(drawer, recipeNotes, userId);
 
+    // Determine whether there is any note content to show
+    var hasNoteContent = !!recipe.note_blurb || recipeNotes.length > 0;
+
     if (notesToggle && noteCardList) {
       var _notesOpen = false;
       var notesIcon  = notesToggle.querySelector('img');
@@ -875,6 +887,10 @@ window.addEventListener('load', async function() {
           drawer.style.setProperty('display', 'block', 'important');
           if (instructions) instructions.style.setProperty('display', 'flex', 'important');
           if (notesSection)  notesSection.style.setProperty('display', 'flex', 'important');
+          // Auto-show noteCardList when opening if there's note content
+          if (hasNoteContent && noteCardList) {
+            noteCardList.style.setProperty('display', 'flex', 'important');
+          }
           if (glanceIcon) glanceIcon.style.transform = 'rotate(180deg)';
         }
       });
@@ -1420,6 +1436,8 @@ window.addEventListener('load', async function() {
     }
 
     if (bulkActionsEl) bulkActionsEl.style.setProperty('display', 'flex', 'important');
+    // Re-hide empty state after async work — Wized may re-show it during the await
+    if (emptyEl) emptyEl.style.setProperty('display', 'none', 'important');
 
     var PAGE_SIZE      = 20;
     var currentlyShown = 0;
