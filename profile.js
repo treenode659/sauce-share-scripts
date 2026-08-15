@@ -779,7 +779,7 @@ window.addEventListener('load', async function() {
     var ingredientsList = drawer ? drawer.querySelector('[wized="recipe-ingredients-list"]') : null;
     var directionsList  = drawer ? drawer.querySelector('[wized="recipe-directions-list"]')  : null;
     var instructions    = drawer ? drawer.querySelector('[wized="recipe-instructions"]')     : null;
-    var notesSection    = drawer ? drawer.querySelector('[wized="recipe-notes-section"]')    : null;
+    var notesSection    = drawer ? (drawer.querySelector('[wized="recipe-notes-section"]') || drawer.querySelector('[wized="profile-notes-section"]')) : null;
     var noteCardList    = drawer ? drawer.querySelector('[wized="recipe-note-card-list"]')   : null;
     var notesToggle     = drawer ? drawer.querySelector('[wized="recipe-notes-toggle"]')     : null;
 
@@ -1218,7 +1218,7 @@ window.addEventListener('load', async function() {
       var ingredientsList = drawer ? drawer.querySelector('[wized="recipe-ingredients-list"]') : null;
       var directionsList  = drawer ? drawer.querySelector('[wized="recipe-directions-list"]')  : null;
       var instructions    = drawer ? drawer.querySelector('[wized="recipe-instructions"]')     : null;
-      var notesSection    = drawer ? drawer.querySelector('[wized="recipe-notes-section"]')    : null;
+      var notesSection    = drawer ? (drawer.querySelector('[wized="recipe-notes-section"]') || drawer.querySelector('[wized="profile-notes-section"]')) : null;
       var noteCardList    = drawer ? drawer.querySelector('[wized="recipe-note-card-list"]')   : null;
       var notesToggle     = drawer ? drawer.querySelector('[wized="recipe-notes-toggle"]')     : null;
 
@@ -1528,7 +1528,12 @@ window.addEventListener('load', async function() {
       var wrapper = buildFavoriteCard(entry.recipe, userId, entry.notes);
       if (wrapper) listEl.appendChild(wrapper);
     });
-  }
+
+    // Show bulk actions — they're hidden by default and loadFavoriteRecipes
+    // only shows them when recipe favorites exist. If the user only has note
+    // favorites, we need to show them here.
+    var bulkActionsEl = document.querySelector('[wized="favorites-bulk-actions"]');
+    if (bulkActionsEl) bulkActionsEl.style.setProperty('display', 'flex', 'important');
 
   // ── Boot ───────────────────────────────────────────────────────────────────
 
