@@ -1445,7 +1445,7 @@ window.addEventListener('load', async function() {
       }
     }
 
-    // Fetch note favorites so drawers only show notes the user specifically favorited
+    // Fetch note favorites so drawers show notes the user specifically hearted
     var _favoritedNotesByRecipeId = {};
     var { data: noteFavs } = await _supabase
       .from('note_favorites')
@@ -1458,6 +1458,25 @@ window.addEventListener('load', async function() {
         var note = row.notes;
         if (!_favoritedNotesByRecipeId[note.recipe_id]) _favoritedNotesByRecipeId[note.recipe_id] = [];
         _favoritedNotesByRecipeId[note.recipe_id].push(note);
+      });
+    }
+
+    // Also fetch notes the user wrote on any of these favorited recipes.
+    // These won't be in note_favorites (you don't heart your own notes) but should
+    // still appear in the drawer for the user's own favorited recipes.
+    var favRecipeIds = recipes.map(function(r) { return r.id; });
+    var { data: ownNotesOnFavs } = await _supabase
+      .from('notes')
+      .select('id, recipe_id, user_id, sauce_thoughts, tried_it_on, meal_details, photo_url, created_at, profiles(username, avatar_selection)')
+      .eq('user_id', userId)
+      .in('recipe_id', favRecipeIds);
+
+    if (ownNotesOnFavs) {
+      ownNotesOnFavs.forEach(function(note) {
+        if (!_favoritedNotesByRecipeId[note.recipe_id]) _favoritedNotesByRecipeId[note.recipe_id] = [];
+        // Deduplicate by note ID — don't add if already in list from note_favorites
+        var alreadyPresent = _favoritedNotesByRecipeId[note.recipe_id].some(function(n) { return n.id === note.id; });
+        if (!alreadyPresent) _favoritedNotesByRecipeId[note.recipe_id].push(note);
       });
     }
 
