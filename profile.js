@@ -501,16 +501,17 @@ window.addEventListener('load', async function() {
 
     var isOwnRecipe = recipe.user_id === userId;
 
-    // pinned-note-owner-label: owners see "your note", non-owners see @username of creator
+    // Owner label: show in the engagement section (visible when chevron is expanded)
+    // Owners see "your note", non-owners see @username of the recipe creator
     var ownerLabel = card.querySelector('[wized="pinned-note-owner-label"]');
     if (ownerLabel) {
       if (isOwnRecipe) {
         ownerLabel.textContent = 'your note';
       } else {
-        var creatorUsername = recipe._creatorUsername || null;
-        ownerLabel.textContent = creatorUsername ? '@' + creatorUsername : '';
+        ownerLabel.textContent = recipe._creatorUsername ? '@' + recipe._creatorUsername : '';
       }
-      ownerLabel.style.setProperty('display', 'block', 'important');
+      // Don't set display here — let it inherit from the engagement section
+      // which is shown/hidden by the chevron toggle
     }
 
     // Edit link: only for owners
@@ -527,8 +528,7 @@ window.addEventListener('load', async function() {
       }
     }
 
-    // Hearts hidden entirely on pinned notes — decorative only with no persistence,
-    // confusing UX. Hide the heart wrapper by class (no wized attribute on hearts).
+    // Hearts hidden entirely on pinned notes
     var pinnedFavWrap = card.querySelector('.profile-recipes_note-inactive, .profile-recipes_note-active')?.parentElement || null;
     if (pinnedFavWrap) pinnedFavWrap.style.setProperty('display', 'none', 'important');
 
@@ -980,7 +980,7 @@ window.addEventListener('load', async function() {
 
               var { data: newRecipes } = await _supabase
                 .from('recipes')
-                .select('id, recipe_title, slug, header_image, base_pairing, flavor_profile, ingredients, directions, note_blurb, note_tried, note_details, photo_url, user_id, profiles(username)')
+                .select('id, recipe_title, slug, header_image, base_pairing, flavor_profile, ingredients, directions, note_blurb, note_tried, note_details, photo_url, user_id')
                 .in('id', toAdd);
 
               if (newRecipes && listEl) {
@@ -1389,7 +1389,7 @@ window.addEventListener('load', async function() {
 
     var { data: favorites, error } = await _supabase
       .from('favorites')
-      .select('recipe_id, created_at, recipes(id, recipe_title, slug, header_image, base_pairing, flavor_profile, ingredients, directions, note_blurb, note_tried, note_details, photo_url, user_id, profiles(username))')
+      .select('recipe_id, created_at, recipes(id, recipe_title, slug, header_image, base_pairing, flavor_profile, ingredients, directions, note_blurb, note_tried, note_details, photo_url, user_id)')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
@@ -1412,21 +1412,21 @@ window.addEventListener('load', async function() {
     // Expose favorited recipe IDs so loadFavoriteNotes can skip them
     window._favoritedRecipeIds = new Set(recipes.map(function(r) { return r.id; }));
 
-    // Fetch creator usernames for all unique recipe owners in one query —
-    // more reliable than a nested profiles join on recipes
-    var uniqueOwnerIds = Array.from(new Set(recipes.map(function(r) { return r.user_id; }).filter(Boolean)));
-    var creatorUsernameMap = {};
+    // Fetch creator usernames for all unique recipe owners in one direct query.
+    // We avoid relying on nested profiles join in the recipes select because that
+    // requires the FK to be registered in Supabase's PostgREST schema — unreliable.
+    var uniqueOwnerIds = Array.from(new Set(
+      recipes.map(function(r) { return r.user_id; }).filter(Boolean)
+    ));
     if (uniqueOwnerIds.length > 0) {
       var { data: ownerProfiles } = await _supabase
-        .from('profiles')
-        .select('id, username')
-        .in('id', uniqueOwnerIds);
+        .from('profiles').select('id, username').in('id', uniqueOwnerIds);
       if (ownerProfiles) {
-        ownerProfiles.forEach(function(p) { creatorUsernameMap[p.id] = p.username; });
+        var usernameMap = {};
+        ownerProfiles.forEach(function(p) { usernameMap[p.id] = p.username; });
+        recipes.forEach(function(r) { r._creatorUsername = usernameMap[r.user_id] || null; });
       }
     }
-    // Attach username to each recipe so buildFavoriteCard / populatePinnedNote can use it
-    recipes.forEach(function(r) { r._creatorUsername = creatorUsernameMap[r.user_id] || null; });
 
     // Fetch note favorites so drawers only show notes the user specifically favorited
     var _favoritedNotesByRecipeId = {};
@@ -1509,7 +1509,7 @@ window.addEventListener('load', async function() {
         notes(
           id, recipe_id, user_id, sauce_thoughts, tried_it_on, meal_details, photo_url, created_at,
           profiles(username, avatar_selection),
-          recipes(id, recipe_title, slug, header_image, base_pairing, flavor_profile, ingredients, directions, note_blurb, note_tried, note_details, photo_url, user_id, profiles(username))
+          recipes(id, recipe_title, slug, header_image, base_pairing, flavor_profile, ingredients, directions, note_blurb, note_tried, note_details, photo_url, user_id)
         )
       `)
       .eq('user_id', userId);
@@ -1538,17 +1538,17 @@ window.addEventListener('load', async function() {
     if (Object.keys(recipeMap).length === 0) return;
 
     // Fetch creator usernames for all unique recipe owners
-    var uniqueOwnerIds2 = Array.from(new Set(
+    var uniqueNoteOwnerIds = Array.from(new Set(
       Object.values(recipeMap).map(function(e) { return e.recipe.user_id; }).filter(Boolean)
     ));
-    if (uniqueOwnerIds2.length > 0) {
-      var { data: ownerProfiles2 } = await _supabase
-        .from('profiles').select('id, username').in('id', uniqueOwnerIds2);
-      if (ownerProfiles2) {
-        ownerProfiles2.forEach(function(p) {
-          Object.values(recipeMap).forEach(function(e) {
-            if (e.recipe.user_id === p.id) e.recipe._creatorUsername = p.username;
-          });
+    if (uniqueNoteOwnerIds.length > 0) {
+      var { data: noteOwnerProfiles } = await _supabase
+        .from('profiles').select('id, username').in('id', uniqueNoteOwnerIds);
+      if (noteOwnerProfiles) {
+        var noteUsernameMap = {};
+        noteOwnerProfiles.forEach(function(p) { noteUsernameMap[p.id] = p.username; });
+        Object.values(recipeMap).forEach(function(e) {
+          e.recipe._creatorUsername = noteUsernameMap[e.recipe.user_id] || null;
         });
       }
     }
