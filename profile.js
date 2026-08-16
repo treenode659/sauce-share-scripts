@@ -509,6 +509,11 @@ window.addEventListener('load', async function() {
       ownerLabel.removeAttribute('href');
       ownerLabel.style.cursor        = 'default';
       ownerLabel.style.pointerEvents = 'none';
+      // Belt-and-suspenders: prevent any ancestor listener from navigating
+      ownerLabel.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+      });
       if (isOwnRecipe) {
         ownerLabel.textContent = 'your note';
       } else {
@@ -837,16 +842,12 @@ window.addEventListener('load', async function() {
     // Determine whether there is any note content
     var hasNoteContent = !!recipe.note_blurb || recipeNotes.length > 0;
 
-    // If no note content, hide noteCardList; otherwise leave it at CSS default (visible)
-    if (!hasNoteContent && noteCardList) {
-      noteCardList.style.setProperty('display', 'none', 'important');
-    }
+    // noteCardList starts hidden — only shown when user clicks notesToggle
+    if (noteCardList) noteCardList.style.setProperty('display', 'none', 'important');
 
-    // Notes toggle — starts "open" if there's content so notes are visible immediately
     if (notesToggle && noteCardList) {
-      var _notesOpen = hasNoteContent;
+      var _notesOpen = false;
       var notesIcon  = notesToggle.querySelector('img');
-      if (notesIcon && hasNoteContent) notesIcon.style.transform = 'rotate(180deg)';
       document.addEventListener('click', function(e) {
         if (!notesToggle.contains(e.target)) return;
         _notesOpen = !_notesOpen;
@@ -867,7 +868,7 @@ window.addEventListener('load', async function() {
         if (drawerVisible) {
           if (instructions) instructions.style.setProperty('display', 'flex', 'important');
           if (notesSection)  notesSection.style.setProperty('display', 'flex', 'important');
-          if (noteCardList)  noteCardList.style.setProperty('display', 'flex', 'important');
+          // noteCardList deliberately NOT shown here — it's controlled by notesToggle
         }
       });
       drawerObserver.observe(drawer, { attributes: true, attributeFilter: ['style', 'class'] });
@@ -886,7 +887,7 @@ window.addEventListener('load', async function() {
           drawer.style.setProperty('display', 'block', 'important');
           if (instructions) instructions.style.setProperty('display', 'flex', 'important');
           if (notesSection)  notesSection.style.setProperty('display', 'flex', 'important');
-          if (hasNoteContent && noteCardList) noteCardList.style.setProperty('display', 'flex', 'important');
+          // noteCardList deliberately NOT shown here — it's controlled by notesToggle
           if (glanceIcon) glanceIcon.style.transform = 'rotate(180deg)';
         }
       });
