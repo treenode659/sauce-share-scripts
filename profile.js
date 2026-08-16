@@ -501,17 +501,20 @@ window.addEventListener('load', async function() {
 
     var isOwnRecipe = recipe.user_id === userId;
 
-    // Owner label: show in the engagement section (visible when chevron is expanded)
-    // Owners see "your note", non-owners see @username of the recipe creator
+    // Owner label: owners see "your note", non-owners see @username of the recipe creator.
+    // Must use setProperty (not removeProperty) to override any Webflow CSS hiding.
+    // Also strip href — Webflow may have made this a link block that navigates on click.
     var ownerLabel = card.querySelector('[wized="pinned-note-owner-label"]');
     if (ownerLabel) {
+      ownerLabel.removeAttribute('href');
+      ownerLabel.style.cursor        = 'default';
+      ownerLabel.style.pointerEvents = 'none';
       if (isOwnRecipe) {
         ownerLabel.textContent = 'your note';
       } else {
         ownerLabel.textContent = recipe._creatorUsername ? '@' + recipe._creatorUsername : '';
       }
-      // Don't set display here — let it inherit from the engagement section
-      // which is shown/hidden by the chevron toggle
+      ownerLabel.style.setProperty('display', 'block', 'important');
     }
 
     // Edit link: only for owners
