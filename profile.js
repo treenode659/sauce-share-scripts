@@ -818,7 +818,19 @@ window.addEventListener('load', async function() {
     }
 
     if (checkbox) checkbox.style.setProperty('display', 'none', 'important');
-    if (editBtn)  editBtn.style.setProperty('display', 'none', 'important');
+
+    var isFavOwnRecipe = recipe.user_id === userId;
+    if (editBtn) {
+      if (isFavOwnRecipe) {
+        editBtn.style.cursor = 'pointer';
+        editBtn.style.setProperty('display', 'flex', 'important');
+        editBtn.addEventListener('click', function() {
+          window.location.href = 'https://sauce-share-4c2702.webflow.io/edit-recipe?slug=' + (recipe.slug || '');
+        });
+      } else {
+        editBtn.style.setProperty('display', 'none', 'important');
+      }
+    }
 
     if (ingredientsList) renderRows(ingredientsList, 'recipe-ingredient-row-template', 'recipe-ingredient-text', recipe.ingredients);
     if (directionsList)  renderRows(directionsList,  'recipe-direction-row-template',  'recipe-direction-text',  recipe.directions);
@@ -1176,7 +1188,7 @@ window.addEventListener('load', async function() {
 
     var { data: recipes, error } = await _supabase
       .from('recipes')
-      .select('id, recipe_title, slug, header_image, base_pairing, flavor_profile, ingredients, directions, note_blurb, note_tried, note_details, photo_url')
+      .select('id, user_id, recipe_title, slug, header_image, base_pairing, flavor_profile, ingredients, directions, note_blurb, note_tried, note_details, photo_url')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
@@ -1187,10 +1199,11 @@ window.addEventListener('load', async function() {
 
     if (bulkActionsEl) bulkActionsEl.style.setProperty('display', 'flex', 'important');
 
+    var recipeIds = recipes.map(function(r) { return r.id; });
     var { data: allCommunityNotes } = await _supabase
       .from('notes')
-      .select('*')
-      .eq('user_id', userId)
+      .select('*, profiles(username, avatar_selection)')
+      .in('recipe_id', recipeIds)
       .order('created_at', { ascending: false });
 
     allCommunityNotes = allCommunityNotes || [];
