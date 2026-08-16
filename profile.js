@@ -501,17 +501,21 @@ window.addEventListener('load', async function() {
 
     var isOwnRecipe = recipe.user_id === userId;
 
-    // Owner label — only show for recipe owner
+    // pinned-note-owner-label shows username for all viewers:
+    // owners see "your note", non-owners see "@username" of the recipe creator
     var ownerLabel = card.querySelector('[wized="pinned-note-owner-label"]');
     if (ownerLabel) {
       if (isOwnRecipe) {
-        ownerLabel.style.removeProperty('display');
+        ownerLabel.textContent = 'your note';
       } else {
-        ownerLabel.style.setProperty('display', 'none', 'important');
+        // recipe.profiles is joined in the select — show creator's username
+        var creatorUsername = recipe.profiles?.username || null;
+        ownerLabel.textContent = creatorUsername ? '@' + creatorUsername : '';
       }
+      ownerLabel.style.setProperty('display', 'block', 'important');
     }
 
-    // Edit link uses note-card-edit-link (same as community notes in this template)
+    // Edit link: only for owners
     var editLink = card.querySelector('[wized="note-card-edit-link"]');
     if (editLink) {
       if (isOwnRecipe) {
@@ -525,14 +529,31 @@ window.addEventListener('load', async function() {
       }
     }
 
-    // Hearts have no wized attribute — find by class. Always hide on pinned notes
-    // (pinned notes live on recipes table, not note_favorites, so can't be individually favorited)
+    // Hearts have no wized attribute — find by class.
+    // Owners: hide heart entirely. Non-owners: decorative toggle (no DB call —
+    // pinned notes can't be stored in note_favorites).
     var pinnedFavWrap    = card.querySelector('.profile-recipes_note-inactive, .profile-recipes_note-active')?.parentElement || null;
     var pinnedFavActive  = card.querySelector('.profile-recipes_note-active');
     var pinnedFavInactive= card.querySelector('.profile-recipes_note-inactive');
-    if (pinnedFavWrap)    pinnedFavWrap.style.setProperty('display', 'none', 'important');
-    if (pinnedFavActive)  pinnedFavActive.style.setProperty('display', 'none', 'important');
-    if (pinnedFavInactive)pinnedFavInactive.style.setProperty('display', 'none', 'important');
+
+    if (isOwnRecipe) {
+      if (pinnedFavWrap) pinnedFavWrap.style.setProperty('display', 'none', 'important');
+    } else {
+      if (pinnedFavWrap) pinnedFavWrap.style.setProperty('display', 'flex', 'important');
+      if (pinnedFavActive)   pinnedFavActive.style.setProperty('display',   'none',  'important');
+      if (pinnedFavInactive) pinnedFavInactive.style.setProperty('display', 'block', 'important');
+
+      var _pinnedToggled = false;
+      if (pinnedFavWrap) {
+        pinnedFavWrap.style.cursor = 'pointer';
+        pinnedFavWrap.addEventListener('click', function(e) {
+          e.stopPropagation();
+          _pinnedToggled = !_pinnedToggled;
+          if (pinnedFavActive)   pinnedFavActive.style.setProperty('display',   _pinnedToggled ? 'block' : 'none',  'important');
+          if (pinnedFavInactive) pinnedFavInactive.style.setProperty('display', _pinnedToggled ? 'none'  : 'block', 'important');
+        });
+      }
+    }
 
     var chevron    = card.querySelector('[wized="pinned-note-chevron"]');
     var chevronImg = chevron ? chevron.querySelector('img') : null;
@@ -982,7 +1003,7 @@ window.addEventListener('load', async function() {
 
               var { data: newRecipes } = await _supabase
                 .from('recipes')
-                .select('id, recipe_title, slug, header_image, base_pairing, flavor_profile, ingredients, directions, note_blurb, note_tried, note_details, photo_url, user_id')
+                .select('id, recipe_title, slug, header_image, base_pairing, flavor_profile, ingredients, directions, note_blurb, note_tried, note_details, photo_url, user_id, profiles(username)')
                 .in('id', toAdd);
 
               if (newRecipes && listEl) {
@@ -1391,7 +1412,7 @@ window.addEventListener('load', async function() {
 
     var { data: favorites, error } = await _supabase
       .from('favorites')
-      .select('recipe_id, created_at, recipes(id, recipe_title, slug, header_image, base_pairing, flavor_profile, ingredients, directions, note_blurb, note_tried, note_details, photo_url, user_id)')
+      .select('recipe_id, created_at, recipes(id, recipe_title, slug, header_image, base_pairing, flavor_profile, ingredients, directions, note_blurb, note_tried, note_details, photo_url, user_id, profiles(username))')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
@@ -1495,7 +1516,7 @@ window.addEventListener('load', async function() {
         notes(
           id, recipe_id, user_id, sauce_thoughts, tried_it_on, meal_details, photo_url, created_at,
           profiles(username, avatar_selection),
-          recipes(id, recipe_title, slug, header_image, base_pairing, flavor_profile, ingredients, directions, note_blurb, note_tried, note_details, photo_url, user_id)
+          recipes(id, recipe_title, slug, header_image, base_pairing, flavor_profile, ingredients, directions, note_blurb, note_tried, note_details, photo_url, user_id, profiles(username))
         )
       `)
       .eq('user_id', userId);
