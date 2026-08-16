@@ -501,25 +501,37 @@ window.addEventListener('load', async function() {
 
     var isOwnRecipe = recipe.user_id === userId;
 
-    // Owner label: owners see "your note", non-owners see @username of the recipe creator.
-    // Must use setProperty (not removeProperty) to override any Webflow CSS hiding.
-    // Also strip href — Webflow may have made this a link block that navigates on click.
+    // "your note" label — static text, only shown for the recipe owner
     var ownerLabel = card.querySelector('[wized="pinned-note-owner-label"]');
     if (ownerLabel) {
       ownerLabel.removeAttribute('href');
       ownerLabel.style.cursor        = 'default';
       ownerLabel.style.pointerEvents = 'none';
-      // Belt-and-suspenders: prevent any ancestor listener from navigating
-      ownerLabel.addEventListener('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-      });
+      ownerLabel.addEventListener('click', function(e) { e.preventDefault(); e.stopPropagation(); });
       if (isOwnRecipe) {
         ownerLabel.textContent = 'your note';
+        ownerLabel.style.setProperty('display', 'block', 'important');
       } else {
-        ownerLabel.textContent = recipe._creatorUsername ? '@' + recipe._creatorUsername : '';
+        ownerLabel.style.setProperty('display', 'none', 'important');
       }
-      ownerLabel.style.setProperty('display', 'block', 'important');
+    }
+
+    // Username link — only shown for non-owners, links to the creator's profile
+    var usernameLink = card.querySelector('[wized="pinned-note-username"]');
+    if (usernameLink) {
+      if (!isOwnRecipe && recipe._creatorUsername) {
+        usernameLink.textContent = '@' + recipe._creatorUsername;
+        usernameLink.style.cursor = 'pointer';
+        usernameLink.style.setProperty('display', 'block', 'important');
+        usernameLink.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          window.location.href = '/member-profile?username=' +
+            encodeURIComponent(recipe._creatorUsername);
+        });
+      } else {
+        usernameLink.style.setProperty('display', 'none', 'important');
+      }
     }
 
     // Edit link: only for owners
