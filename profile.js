@@ -501,15 +501,13 @@ window.addEventListener('load', async function() {
 
     var isOwnRecipe = recipe.user_id === userId;
 
-    // pinned-note-owner-label shows username for all viewers:
-    // owners see "your note", non-owners see "@username" of the recipe creator
+    // pinned-note-owner-label: owners see "your note", non-owners see @username of creator
     var ownerLabel = card.querySelector('[wized="pinned-note-owner-label"]');
     if (ownerLabel) {
       if (isOwnRecipe) {
         ownerLabel.textContent = 'your note';
       } else {
-        // recipe.profiles is joined in the select — show creator's username
-        var creatorUsername = recipe.profiles?.username || null;
+        var creatorUsername = recipe._creatorUsername || null;
         ownerLabel.textContent = creatorUsername ? '@' + creatorUsername : '';
       }
       ownerLabel.style.setProperty('display', 'block', 'important');
@@ -529,31 +527,10 @@ window.addEventListener('load', async function() {
       }
     }
 
-    // Hearts have no wized attribute — find by class.
-    // Owners: hide heart entirely. Non-owners: decorative toggle (no DB call —
-    // pinned notes can't be stored in note_favorites).
-    var pinnedFavWrap    = card.querySelector('.profile-recipes_note-inactive, .profile-recipes_note-active')?.parentElement || null;
-    var pinnedFavActive  = card.querySelector('.profile-recipes_note-active');
-    var pinnedFavInactive= card.querySelector('.profile-recipes_note-inactive');
-
-    if (isOwnRecipe) {
-      if (pinnedFavWrap) pinnedFavWrap.style.setProperty('display', 'none', 'important');
-    } else {
-      if (pinnedFavWrap) pinnedFavWrap.style.setProperty('display', 'flex', 'important');
-      if (pinnedFavActive)   pinnedFavActive.style.setProperty('display',   'none',  'important');
-      if (pinnedFavInactive) pinnedFavInactive.style.setProperty('display', 'block', 'important');
-
-      var _pinnedToggled = false;
-      if (pinnedFavWrap) {
-        pinnedFavWrap.style.cursor = 'pointer';
-        pinnedFavWrap.addEventListener('click', function(e) {
-          e.stopPropagation();
-          _pinnedToggled = !_pinnedToggled;
-          if (pinnedFavActive)   pinnedFavActive.style.setProperty('display',   _pinnedToggled ? 'block' : 'none',  'important');
-          if (pinnedFavInactive) pinnedFavInactive.style.setProperty('display', _pinnedToggled ? 'none'  : 'block', 'important');
-        });
-      }
-    }
+    // Hearts hidden entirely on pinned notes — decorative only with no persistence,
+    // confusing UX. Hide the heart wrapper by class (no wized attribute on hearts).
+    var pinnedFavWrap = card.querySelector('.profile-recipes_note-inactive, .profile-recipes_note-active')?.parentElement || null;
+    if (pinnedFavWrap) pinnedFavWrap.style.setProperty('display', 'none', 'important');
 
     var chevron    = card.querySelector('[wized="pinned-note-chevron"]');
     var chevronImg = chevron ? chevron.querySelector('img') : null;
@@ -1435,6 +1412,22 @@ window.addEventListener('load', async function() {
     // Expose favorited recipe IDs so loadFavoriteNotes can skip them
     window._favoritedRecipeIds = new Set(recipes.map(function(r) { return r.id; }));
 
+    // Fetch creator usernames for all unique recipe owners in one query —
+    // more reliable than a nested profiles join on recipes
+    var uniqueOwnerIds = Array.from(new Set(recipes.map(function(r) { return r.user_id; }).filter(Boolean)));
+    var creatorUsernameMap = {};
+    if (uniqueOwnerIds.length > 0) {
+      var { data: ownerProfiles } = await _supabase
+        .from('profiles')
+        .select('id, username')
+        .in('id', uniqueOwnerIds);
+      if (ownerProfiles) {
+        ownerProfiles.forEach(function(p) { creatorUsernameMap[p.id] = p.username; });
+      }
+    }
+    // Attach username to each recipe so buildFavoriteCard / populatePinnedNote can use it
+    recipes.forEach(function(r) { r._creatorUsername = creatorUsernameMap[r.user_id] || null; });
+
     // Fetch note favorites so drawers only show notes the user specifically favorited
     var _favoritedNotesByRecipeId = {};
     var { data: noteFavs } = await _supabase
@@ -1543,6 +1536,22 @@ window.addEventListener('load', async function() {
     });
 
     if (Object.keys(recipeMap).length === 0) return;
+
+    // Fetch creator usernames for all unique recipe owners
+    var uniqueOwnerIds2 = Array.from(new Set(
+      Object.values(recipeMap).map(function(e) { return e.recipe.user_id; }).filter(Boolean)
+    ));
+    if (uniqueOwnerIds2.length > 0) {
+      var { data: ownerProfiles2 } = await _supabase
+        .from('profiles').select('id, username').in('id', uniqueOwnerIds2);
+      if (ownerProfiles2) {
+        ownerProfiles2.forEach(function(p) {
+          Object.values(recipeMap).forEach(function(e) {
+            if (e.recipe.user_id === p.id) e.recipe._creatorUsername = p.username;
+          });
+        });
+      }
+    }
 
     Object.keys(recipeMap).forEach(function(recipeId) {
       var entry   = recipeMap[recipeId];
