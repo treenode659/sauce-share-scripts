@@ -516,7 +516,7 @@ window.addEventListener('load', async function() {
     if (editLink) {
       if (isOwnRecipe) {
         editLink.style.cursor = 'pointer';
-        editLink.style.removeProperty('display');
+        editLink.style.setProperty('display', 'flex', 'important');
         editLink.addEventListener('click', function() {
           window.location.href = 'https://sauce-share-4c2702.webflow.io/edit-note?type=pinned&id=' + recipe.id;
         });
@@ -630,7 +630,7 @@ window.addEventListener('load', async function() {
       if (isOwnNote) {
         if (editLink) {
           editLink.style.cursor = 'pointer';
-          editLink.style.removeProperty('display');
+          editLink.style.setProperty('display', 'flex', 'important');
           editLink.addEventListener('click', function() {
             window.location.href = 'https://sauce-share-4c2702.webflow.io/edit-note?type=community&id=' + note.id;
           });
@@ -642,14 +642,14 @@ window.addEventListener('load', async function() {
         if (usernameEl) {
           usernameEl.textContent  = '@' + (note.profiles?.username || 'member');
           usernameEl.style.cursor = 'pointer';
-          usernameEl.style.removeProperty('display');
+          usernameEl.style.setProperty('display', 'block', 'important');
           usernameEl.addEventListener('click', function() {
             window.location.href = '/member-profile?username=' +
               encodeURIComponent(note.profiles?.username || '');
           });
         }
         if (favBtnWrap) {
-          favBtnWrap.style.removeProperty('display');
+          favBtnWrap.style.setProperty('display', 'flex', 'important');
           favBtnWrap.style.cursor = 'pointer';
           if (favActive)   favActive.style.setProperty('display',   'block', 'important');
           if (favInactive) favInactive.style.setProperty('display', 'none',  'important');
