@@ -1281,12 +1281,17 @@ window.addEventListener('load', function() {
   var modal             = document.querySelector('[wized="share-modal"]');
   var closeBtn          = document.querySelector('[wized="share-modal-close"]');
   var shareBtn          = document.querySelector('[wized="recipe-share"]');
+  var modalHeading      = document.querySelector('[wized="share-modal-heading"]');
+  var modalSubheading   = document.querySelector('[wized="share-modal-subheading"]');
 
   var pinterest         = document.querySelector('[wized="share-pinterest"]');
   var facebook          = document.querySelector('[wized="share-facebook"]');
   var reddit            = document.querySelector('[wized="share-reddit"]');
   var twitter           = document.querySelector('[wized="share-twitter"]');
   var whatsapp          = document.querySelector('[wized="share-whatsapp"]');
+
+  var copyLinkBtn       = document.querySelector('[wized="share-copy-link"]');
+  var copyConfirm       = document.querySelector('[wized="share-copy-confirm"]');
 
   var emailHeader       = document.querySelector('[wized="share-email-header"]');
   var emailContent      = document.querySelector('[wized="share-email-content"]');
@@ -1300,13 +1305,17 @@ window.addEventListener('load', function() {
   var successEl         = document.querySelector('[wized="share-success"]');
   var errorEl           = document.querySelector('[wized="share-error"]');
 
-  var _emailOpen    = false;
-  var _recipeTitle  = '';
-  var _recipeUrl    = window.location.href;
+  var _emailOpen   = false;
+  var _shareUrl    = window.location.href; // updated per context (recipe or note)
+  var _recipeTitle = '';
+  var _recipeUrl   = window.location.href;
 
-  // ── Helpers ─────────────────────────────────────────────────────────────────
+  // ── Helpers ──────────────────────────────────────────────────────────────────
 
-  function openModal() {
+  function openModal(heading, subheading, url) {
+    _shareUrl = url || _recipeUrl;
+    if (modalHeading)    modalHeading.textContent    = heading    || 'Share Recipe:';
+    if (modalSubheading) modalSubheading.textContent = subheading || 'Share with:';
     if (modal) modal.style.setProperty('display', 'flex', 'important');
     document.body.style.overflow = 'hidden';
   }
@@ -1315,6 +1324,7 @@ window.addEventListener('load', function() {
     if (modal) modal.style.setProperty('display', 'none', 'important');
     document.body.style.overflow = '';
     resetEmail();
+    hideCopyConfirm();
   }
 
   function showFeedback(el, msg) {
@@ -1324,27 +1334,31 @@ window.addEventListener('load', function() {
     setTimeout(function() { el.style.setProperty('display', 'none', 'important'); }, 4000);
   }
 
+  function hideCopyConfirm() {
+    if (copyConfirm) copyConfirm.style.setProperty('display', 'none', 'important');
+  }
+
   function resetEmail() {
     _emailOpen = false;
-    if (emailContent)     emailContent.style.setProperty('display', 'none', 'important');
-    if (emailChevron)     emailChevron.style.transform = '';
-    if (emailHeader)      emailHeader.style.borderRadius = '12px';
-    if (sendSomeone)      sendSomeone.checked = true;
-    if (sendMyself)       sendMyself.checked  = false;
-    if (emailInput)       emailInput.value = '';
-    if (newsletterContent)newsletterContent.style.setProperty('display', 'none', 'important');
-    if (successEl)        successEl.style.setProperty('display', 'none', 'important');
-    if (errorEl)          errorEl.style.setProperty('display',   'none', 'important');
+    if (emailContent)      emailContent.style.setProperty('display', 'none', 'important');
+    if (emailChevron)      emailChevron.style.transform = '';
+    if (emailHeader)       emailHeader.style.borderRadius = '12px';
+    if (sendSomeone)       sendSomeone.checked = true;
+    if (sendMyself)        sendMyself.checked  = false;
+    if (emailInput)        emailInput.value = '';
+    if (newsletterContent) newsletterContent.style.setProperty('display', 'none', 'important');
+    if (successEl)         successEl.style.setProperty('display', 'none', 'important');
+    if (errorEl)           errorEl.style.setProperty('display',   'none', 'important');
   }
 
   function openEmail() {
     _emailOpen = true;
-    if (emailContent)     emailContent.style.setProperty('display', 'flex', 'important');
-    if (emailChevron)     emailChevron.style.transform = 'rotate(180deg)';
-    if (emailHeader)      emailHeader.style.borderRadius = '12px 12px 0 0';
-    if (sendSomeone)      sendSomeone.checked = true;
-    if (sendMyself)       sendMyself.checked  = false;
-    if (newsletterContent)newsletterContent.style.setProperty('display', 'none', 'important');
+    if (emailContent)      emailContent.style.setProperty('display', 'flex', 'important');
+    if (emailChevron)      emailChevron.style.transform = 'rotate(180deg)';
+    if (emailHeader)       emailHeader.style.borderRadius = '12px 12px 0 0';
+    if (sendSomeone)       sendSomeone.checked = true;
+    if (sendMyself)        sendMyself.checked  = false;
+    if (newsletterContent) newsletterContent.style.setProperty('display', 'none', 'important');
   }
 
   function closeEmail() {
@@ -1354,8 +1368,8 @@ window.addEventListener('load', function() {
     if (emailHeader)  emailHeader.style.borderRadius = '12px';
   }
 
-  function shareUrl(platform) {
-    var url   = encodeURIComponent(_recipeUrl);
+  function buildShareUrl(platform) {
+    var url   = encodeURIComponent(_shareUrl);
     var title = encodeURIComponent(_recipeTitle);
     var links = {
       pinterest: 'https://pinterest.com/pin/create/button/?url=' + url + '&description=' + title,
@@ -1371,16 +1385,20 @@ window.addEventListener('load', function() {
     if (!el) return;
     el.style.cursor = 'pointer';
     el.addEventListener('click', function() {
-      window.open(shareUrl(platform), '_blank', 'noopener,noreferrer');
+      window.open(buildShareUrl(platform), '_blank', 'noopener,noreferrer');
     });
   }
 
-  // ── Modal open / close ──────────────────────────────────────────────────────
+  // ── Recipe share button ───────────────────────────────────────────────────────
 
   if (shareBtn) {
     shareBtn.style.cursor = 'pointer';
-    shareBtn.addEventListener('click', function() { openModal(); });
+    shareBtn.addEventListener('click', function() {
+      openModal('Share Recipe:', 'Share with:', _recipeUrl);
+    });
   }
+
+  // ── Close button + Escape ─────────────────────────────────────────────────────
 
   if (closeBtn) {
     closeBtn.style.cursor = 'pointer';
@@ -1391,13 +1409,36 @@ window.addEventListener('load', function() {
     if (e.key === 'Escape') closeModal();
   });
 
-  // ── Social icons ─────────────────────────────────────────────────────────────
+  // ── Social icons ──────────────────────────────────────────────────────────────
 
   wireIcon(pinterest, 'pinterest');
   wireIcon(facebook,  'facebook');
   wireIcon(reddit,    'reddit');
   wireIcon(twitter,   'twitter');
   wireIcon(whatsapp,  'whatsapp');
+
+  // ── Copy link ─────────────────────────────────────────────────────────────────
+
+  if (copyLinkBtn) {
+    copyLinkBtn.style.cursor = 'pointer';
+    copyLinkBtn.addEventListener('click', function() {
+      if (!navigator.clipboard) {
+        // Fallback for browsers without clipboard API
+        var ta = document.createElement('textarea');
+        ta.value = _shareUrl;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      } else {
+        navigator.clipboard.writeText(_shareUrl);
+      }
+      if (copyConfirm) {
+        copyConfirm.style.setProperty('display', 'block', 'important');
+        setTimeout(hideCopyConfirm, 2000);
+      }
+    });
+  }
 
   // ── Email accordion ───────────────────────────────────────────────────────────
 
@@ -1423,7 +1464,6 @@ window.addEventListener('load', function() {
     sendMyself.addEventListener('change', function() {
       if (sendMyself.checked) {
         if (newsletterContent) newsletterContent.style.setProperty('display', 'flex', 'important');
-        // Pre-fill with user's own email if logged in
         if (_session && emailInput) {
           _supabase.from('profiles').select('email').eq('id', _session.user.id).single()
             .then(function(res) {
@@ -1454,7 +1494,7 @@ window.addEventListener('load', function() {
       try {
         var { error } = await _supabase.functions.invoke('share-recipe-email', {
           body: {
-            recipe_url:   _recipeUrl,
+            share_url:    _shareUrl,
             recipe_title: _recipeTitle,
             to_email:     email,
             send_self:    isSelf,
@@ -1465,8 +1505,8 @@ window.addEventListener('load', function() {
         if (error) throw error;
 
         showFeedback(successEl, isSelf
-          ? 'Recipe sent to your inbox!'
-          : 'Recipe shared successfully!');
+          ? 'Sent to your inbox!'
+          : 'Shared successfully!');
         if (emailInput) emailInput.value = '';
 
       } catch(err) {
@@ -1478,13 +1518,35 @@ window.addEventListener('load', function() {
     });
   }
 
-  // ── Boot ─────────────────────────────────────────────────────────────────────
+  // ── Note share buttons (wired on render via MutationObserver) ─────────────────
+
+  function wireNoteShareBtn(card) {
+    var btn = card.querySelector('[wized="note-share-btn"]');
+    if (!btn || btn._shareWired) return;
+    btn._shareWired = true;
+    btn.style.cursor = 'pointer';
+    btn.addEventListener('click', function() {
+      var noteId  = card.getAttribute('data-note-id');
+      var noteUrl = _recipeUrl + (noteId ? '#note-' + noteId : '');
+      openModal('Share Note:', 'Share note with:', noteUrl);
+    });
+  }
+
+  var shareObserver = new MutationObserver(function() {
+    document.querySelectorAll('[data-note-id]').forEach(wireNoteShareBtn);
+  });
+  shareObserver.observe(document.body, { childList: true, subtree: true });
+  // Wire any cards already in the DOM
+  document.querySelectorAll('[data-note-id]').forEach(wireNoteShareBtn);
+
+  // ── Boot ──────────────────────────────────────────────────────────────────────
 
   var checkShare = setInterval(function() {
     var recipe = window.Wized?.data?.r?.get_recipe?.data?.[0];
     if (!recipe) return;
     clearInterval(checkShare);
     _recipeTitle = recipe.recipe_title || document.title;
+    _recipeUrl   = window.location.href;
   }, 200);
 
   setTimeout(function() { clearInterval(checkShare); }, 10000);
