@@ -1434,7 +1434,7 @@ window.addEventListener('load', function() {
         navigator.clipboard.writeText(_shareUrl);
       }
       if (copyConfirm) {
-        copyConfirm.style.setProperty('display', 'block', 'important');
+        copyConfirm.style.setProperty('display', 'flex', 'important');
         setTimeout(hideCopyConfirm, 2000);
       }
     });
