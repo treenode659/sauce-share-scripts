@@ -25,6 +25,20 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 // ============================================
+// CARD TITLE CLICK — navigate to recipe page
+// ============================================
+document.addEventListener('click', function(e) {
+  var title = e.target.closest('[wized="card-title"]');
+  if (!title) return;
+  var card = title.closest('.recipe-card');
+  if (!card) return;
+  var slug = card.getAttribute('data-slug');
+  if (slug) {
+    window.location.href = '/recipe?slug=' + slug;
+  }
+});
+
+// ============================================
 // ACCORDION (recipe card ingredient toggle)
 // ============================================
 document.addEventListener('click', function(e) {
