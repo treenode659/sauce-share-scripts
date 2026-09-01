@@ -15,6 +15,13 @@ document.addEventListener("DOMContentLoaded", function() {
       }
     });
   });
+
+  // Mobile filter bar trigger
+  document.querySelectorAll('.filter-bar_trigger').forEach(function(trigger) {
+    trigger.addEventListener('click', function() {
+      this.classList.toggle('is-open');
+    });
+  });
 });
 
 // ============================================
@@ -441,7 +448,7 @@ document.addEventListener("DOMContentLoaded", function() {
   };
 
   function lockFilterBar() {
-    document.querySelectorAll('.filter-trigger_bar').forEach(function(trigger) {
+    document.querySelectorAll('.filter-trigger_bar, .filter-bar_trigger').forEach(function(trigger) {
       trigger.style.opacity       = '0.4';
       trigger.style.pointerEvents = 'none';
       trigger.style.cursor        = 'default';
@@ -449,7 +456,7 @@ document.addEventListener("DOMContentLoaded", function() {
   }
 
   function unlockFilterBar() {
-    document.querySelectorAll('.filter-trigger_bar').forEach(function(trigger) {
+    document.querySelectorAll('.filter-trigger_bar, .filter-bar_trigger').forEach(function(trigger) {
       trigger.style.opacity       = '';
       trigger.style.pointerEvents = '';
       trigger.style.cursor        = '';
