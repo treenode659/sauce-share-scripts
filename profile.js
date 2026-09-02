@@ -1327,7 +1327,7 @@ window.addEventListener('load', async function() {
             drawer._glanceOpen = true;
             drawer.style.setProperty('display', 'block', 'important');
             if (instructions) instructions.style.setProperty('display', 'flex', 'important');
-            if (notesSection)  notesSection.style.setProperty('display', 'block', 'important');
+            if (notesSection)  notesSection.style.setProperty('display', 'flex', 'important');
             if (glanceIcon) glanceIcon.style.transform = 'rotate(180deg)';
           }
         });
