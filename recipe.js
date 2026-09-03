@@ -5,7 +5,7 @@ document.addEventListener("DOMContentLoaded", function() {
   // Event delegation — works even if the element isn't in the DOM yet
   document.addEventListener('click', function(e) {
     var writeNoteEl = document.querySelector('[wized="progress-write-note"]') ||
-                      document.querySelector('.progress-bar-note-scroll');
+                      document.querySelector('.progress-bar_note-scroll');
     if (writeNoteEl && writeNoteEl.contains(e.target)) {
       var target = document.querySelector('.member-notes_controls');
       if (target) target.scrollIntoView({ behavior: 'smooth' });
@@ -37,7 +37,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
       // Target by both wized attribute AND Webflow class name as fallback
       var writeNoteEl = document.querySelector('[wized="progress-write-note"]') ||
-                        document.querySelector('.progress-bar-note-scroll');
+                        document.querySelector('.progress-bar_note-scroll');
       console.log('updateProgress:', percentage + '%', 'writeNoteEl found:', !!writeNoteEl);
       if (writeNoteEl) {
         if (percentage === 100) {
