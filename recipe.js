@@ -40,7 +40,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
       // Show/hide "Write a note" based on completion
       if (writeNoteEl) {
-        if (percentage === 100) writeNoteEl.style.removeProperty('display');
+        if (percentage === 100) writeNoteEl.style.setProperty('display', 'block', 'important');
         else                    writeNoteEl.style.setProperty('display', 'none', 'important');
       }
     }
