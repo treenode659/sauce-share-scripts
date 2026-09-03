@@ -1,19 +1,15 @@
 document.addEventListener("DOMContentLoaded", function() {
   const progressBarFill = document.querySelector('.progress-bar_fill');
   const progressText    = document.querySelector('.progress-bar_label');
-  const writeNoteEl     = document.querySelector('[wized="progress-write-note"]');
 
-  // Hide "Write a note" on load
-  if (writeNoteEl) writeNoteEl.style.setProperty('display', 'none', 'important');
-
-  // Scroll to note form when clicked
-  if (writeNoteEl) {
-    writeNoteEl.style.cursor = 'pointer';
-    writeNoteEl.addEventListener('click', function() {
+  // Event delegation — works even if the element isn't in the DOM yet
+  document.addEventListener('click', function(e) {
+    var writeNoteEl = document.querySelector('[wized="progress-write-note"]');
+    if (writeNoteEl && writeNoteEl.contains(e.target)) {
       var target = document.querySelector('.member-notes_controls');
       if (target) target.scrollIntoView({ behavior: 'smooth' });
-    });
-  }
+    }
+  });
 
   function setupCheckboxes() {
     const rows = document.querySelectorAll('.recipe-ingredients_item, .recipe-directions_item');
@@ -38,10 +34,15 @@ document.addEventListener("DOMContentLoaded", function() {
       if (progressBarFill) progressBarFill.style.width = percentage + '%';
       if (progressText)    progressText.innerText = percentage + '% Complete';
 
-      // Show/hide "Write a note" based on completion
+      // Query fresh every time — avoids stale/null reference
+      var writeNoteEl = document.querySelector('[wized="progress-write-note"]');
       if (writeNoteEl) {
-        if (percentage === 100) writeNoteEl.style.setProperty('display', 'block', 'important');
-        else                    writeNoteEl.style.setProperty('display', 'none', 'important');
+        if (percentage === 100) {
+          writeNoteEl.style.setProperty('display', 'block', 'important');
+          writeNoteEl.style.cursor = 'pointer';
+        } else {
+          writeNoteEl.style.setProperty('display', 'none', 'important');
+        }
       }
     }
   }
@@ -328,7 +329,6 @@ window.addEventListener('load', function () {
     clearInterval(checkReady);
     _recipeId = recipe.id;
 
-    // Set recipe author avatar — profiles join comes from Wized's get_recipe
     var authorAvatarImg = document.querySelector('[wized="author_avatar_icon"]');
     if (authorAvatarImg && recipe.profiles?.avatar_selection) {
       var avatarUrl = avatarMap[recipe.profiles.avatar_selection];
@@ -336,7 +336,6 @@ window.addEventListener('load', function () {
         authorAvatarImg.removeAttribute('srcset');
         authorAvatarImg.removeAttribute('sizes');
         authorAvatarImg.src = avatarUrl;
-        // Match Wized's original sizing: Creator is square, Member is slightly taller
         var isCreator = recipe.author_role === 'Creator';
         authorAvatarImg.style.width  = '2rem';
         authorAvatarImg.style.height = isCreator ? '2rem' : '2.5rem';
@@ -411,7 +410,6 @@ window.addEventListener('load', function () {
     if (!submitBtn) return;
 
     if (!_session) {
-      // Logged out — keep button active so clicking triggers the auth prompt
       submitBtn.style.opacity       = '1';
       submitBtn.style.pointerEvents = 'auto';
       return;
@@ -454,7 +452,6 @@ window.addEventListener('load', function () {
         submitBtn.style.opacity       = '0.4';
         submitBtn.style.pointerEvents = 'none';
       } else {
-        // Logged out — button is active but shows auth prompt on click
         submitBtn.style.opacity       = '1';
         submitBtn.style.pointerEvents = 'auto';
         var authPrompt = document.querySelector('[wized="note-auth-prompt"]');
@@ -673,7 +670,7 @@ window.addEventListener('load', function () {
     }
   }
 
-  var _currentSort = 'newest'; // 'newest' | 'oldest' | 'mine'
+  var _currentSort = 'newest';
 
   // ── Sorting ────────────────────────────────────────────────────────────────
 
@@ -684,13 +681,11 @@ window.addEventListener('load', function () {
     var radioOldest = document.querySelector('[wized="sort-oldest"]');
     var radioMine   = document.querySelector('[wized="sort-mine"]');
 
-    // Start with panel hidden, newest checked by default
     if (panel)       panel.style.setProperty('display', 'none', 'important');
     if (radioNewest) radioNewest.checked = true;
     if (radioOldest) radioOldest.checked = false;
     if (radioMine)   radioMine.checked   = false;
 
-    // Toggle dropdown open/closed
     if (trigger) {
       trigger.style.cursor = 'pointer';
       trigger.addEventListener('click', function(e) {
@@ -701,7 +696,6 @@ window.addEventListener('load', function () {
       });
     }
 
-    // Close panel when clicking outside
     document.addEventListener('click', function() {
       if (panel) panel.style.setProperty('display', 'none', 'important');
     });
@@ -786,14 +780,12 @@ window.addEventListener('load', function () {
       return;
     }
 
-    // Apply sort / filter
-    var notes = _allNotes.slice(); // don't mutate the source array
+    var notes = _allNotes.slice();
     if (_currentSort === 'oldest') {
       notes.sort(function(a, b) { return new Date(a.created_at) - new Date(b.created_at); });
     } else if (_currentSort === 'mine') {
       notes = _session ? notes.filter(function(n) { return n.user_id === _session.user.id; }) : [];
     }
-    // default 'newest' — already ordered newest-first from Supabase
 
     var count  = _expanded ? notes.length : Math.min(NOTES_PER_PAGE, notes.length);
     var toShow = notes.slice(0, count);
@@ -1095,8 +1087,6 @@ window.addEventListener('load', function () {
     } catch(e) {}
   }
 
-  // ── Fetch existing note favorites ──────────────────────────────────────────
-
   async function fetchFavoritedNotes() {
     if (!_session) return;
     try {
@@ -1110,15 +1100,12 @@ window.addEventListener('load', function () {
     } catch(e) {}
   }
 
-  // ── Decorative pinned note heart ───────────────────────────────────────────
-
   function wirePinnedNoteHeart(card) {
     var btn      = card.querySelector('[wized="note-favorite-btn"]');
     var active   = card.querySelector('[wized="note-favorite-active"]');
     var inactive = card.querySelector('[wized="note-favorite-inactive"]');
     if (!btn) return;
 
-    // Start inactive
     if (active)   active.style.setProperty('display',   'none',  'important');
     if (inactive) inactive.style.setProperty('display', 'block', 'important');
 
@@ -1131,8 +1118,6 @@ window.addEventListener('load', function () {
       if (inactive) inactive.style.setProperty('display', _pinnedActive ? 'none'  : 'block', 'important');
     });
   }
-
-  // ── Wire heart on a community note card ────────────────────────────────────
 
   function wireNoteFavorite(card, noteId, noteOwnerId) {
     var btn      = card.querySelector('[wized="note-favorite-btn"]');
@@ -1183,8 +1168,6 @@ window.addEventListener('load', function () {
     if (inactive) inactive.style.setProperty('display', isFavorited ? 'none'  : 'block', 'important');
   }
 
-  // ── Wire pinned note card ──────────────────────────────────────────────────
-
   function wirePinnedNoteCard(recipe) {
     var card = document.querySelector('[wized="recipe-pinned-note-card"]');
     if (!card) return;
@@ -1226,8 +1209,6 @@ window.addEventListener('load', function () {
     });
   }
 
-  // ── Wire community note cards ──────────────────────────────────────────────
-
   function wireCommunityNoteCards() {
     document.querySelectorAll('[data-note-id]').forEach(function(card) {
       var noteId      = card.getAttribute('data-note-id');
@@ -1238,14 +1219,10 @@ window.addEventListener('load', function () {
     });
   }
 
-  // ── Observe DOM for new note cards ─────────────────────────────────────────
-
   var observer = new MutationObserver(function() {
     wireCommunityNoteCards();
   });
   observer.observe(document.body, { childList: true, subtree: true });
-
-  // ── Boot ───────────────────────────────────────────────────────────────────
 
   var checkReady = setInterval(async function() {
     var recipe = window.Wized?.data?.r?.get_recipe?.data?.[0];
@@ -1286,8 +1263,6 @@ window.addEventListener('load', function() {
     } catch(e) {}
   }
 
-  // ── Element refs ────────────────────────────────────────────────────────────
-
   var modal             = document.querySelector('[wized="share-modal"]');
   var closeBtn          = document.querySelector('[wized="share-modal-close"]');
   var shareBtn          = document.querySelector('[wized="recipe-share"]');
@@ -1319,8 +1294,6 @@ window.addEventListener('load', function() {
   var _shareUrl    = window.location.href;
   var _recipeTitle = '';
   var _recipeUrl   = window.location.href;
-
-  // ── Helpers ──────────────────────────────────────────────────────────────────
 
   function openModal(heading, subheading, url) {
     _shareUrl = url || _recipeUrl;
@@ -1399,16 +1372,12 @@ window.addEventListener('load', function() {
     });
   }
 
-  // ── Recipe share button ───────────────────────────────────────────────────────
-
   if (shareBtn) {
     shareBtn.style.cursor = 'pointer';
     shareBtn.addEventListener('click', function() {
       openModal('Share Recipe:', 'Share with:', _recipeUrl);
     });
   }
-
-  // ── Close button + Escape ─────────────────────────────────────────────────────
 
   if (closeBtn) {
     closeBtn.style.cursor = 'pointer';
@@ -1419,15 +1388,11 @@ window.addEventListener('load', function() {
     if (e.key === 'Escape') closeModal();
   });
 
-  // ── Social icons ──────────────────────────────────────────────────────────────
-
   wireIcon(pinterest, 'pinterest');
   wireIcon(facebook,  'facebook');
   wireIcon(reddit,    'reddit');
   wireIcon(twitter,   'twitter');
   wireIcon(whatsapp,  'whatsapp');
-
-  // ── Copy link ─────────────────────────────────────────────────────────────────
 
   if (copyLinkBtn) {
     copyLinkBtn.style.cursor = 'pointer';
@@ -1449,16 +1414,12 @@ window.addEventListener('load', function() {
     });
   }
 
-  // ── Email accordion ───────────────────────────────────────────────────────────
-
   if (emailHeader) {
     emailHeader.style.cursor = 'pointer';
     emailHeader.addEventListener('click', function() {
       if (_emailOpen) closeEmail(); else openEmail();
     });
   }
-
-  // ── Radios ────────────────────────────────────────────────────────────────────
 
   if (sendSomeone) {
     sendSomeone.addEventListener('change', function() {
@@ -1482,8 +1443,6 @@ window.addEventListener('load', function() {
       }
     });
   }
-
-  // ── Send button ───────────────────────────────────────────────────────────────
 
   if (sendBtn) {
     sendBtn.style.cursor = 'pointer';
@@ -1513,9 +1472,7 @@ window.addEventListener('load', function() {
 
         if (error) throw error;
 
-        showFeedback(successEl, isSelf
-          ? 'Sent to your inbox!'
-          : 'Shared successfully!');
+        showFeedback(successEl, isSelf ? 'Sent to your inbox!' : 'Shared successfully!');
         if (emailInput) emailInput.value = '';
 
       } catch(err) {
@@ -1526,8 +1483,6 @@ window.addEventListener('load', function() {
       }
     });
   }
-
-  // ── Note share buttons (wired on render via MutationObserver) ─────────────────
 
   function wireNoteShareBtn(card) {
     var btn = card.querySelector('[wized="note-share-btn"]');
@@ -1546,8 +1501,6 @@ window.addEventListener('load', function() {
   });
   shareObserver.observe(document.body, { childList: true, subtree: true });
   document.querySelectorAll('[data-note-id]').forEach(wireNoteShareBtn);
-
-  // ── Boot ──────────────────────────────────────────────────────────────────────
 
   var checkShare = setInterval(function() {
     var recipe = window.Wized?.data?.r?.get_recipe?.data?.[0];
