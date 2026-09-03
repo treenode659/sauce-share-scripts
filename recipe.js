@@ -4,7 +4,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
   // Event delegation — works even if the element isn't in the DOM yet
   document.addEventListener('click', function(e) {
-    var writeNoteEl = document.querySelector('[wized="progress-write-note"]');
+    var writeNoteEl = document.querySelector('[wized="progress-write-note"]') ||
+                      document.querySelector('.progress-bar-note-scroll');
     if (writeNoteEl && writeNoteEl.contains(e.target)) {
       var target = document.querySelector('.member-notes_controls');
       if (target) target.scrollIntoView({ behavior: 'smooth' });
@@ -34,14 +35,15 @@ document.addEventListener("DOMContentLoaded", function() {
       if (progressBarFill) progressBarFill.style.width = percentage + '%';
       if (progressText)    progressText.innerText = percentage + '% Complete';
 
-      // Query fresh every time — avoids stale/null reference
-      var writeNoteEl = document.querySelector('[wized="progress-write-note"]');
+      // Target by both wized attribute AND Webflow class name as fallback
+      var writeNoteEl = document.querySelector('[wized="progress-write-note"]') ||
+                        document.querySelector('.progress-bar-note-scroll');
+      console.log('updateProgress:', percentage + '%', 'writeNoteEl found:', !!writeNoteEl);
       if (writeNoteEl) {
         if (percentage === 100) {
-          writeNoteEl.style.setProperty('display', 'block', 'important');
-          writeNoteEl.style.cursor = 'pointer';
+          writeNoteEl.setAttribute('style', 'display: block !important; cursor: pointer;');
         } else {
-          writeNoteEl.style.setProperty('display', 'none', 'important');
+          writeNoteEl.setAttribute('style', 'display: none !important;');
         }
       }
     }
@@ -244,8 +246,6 @@ window.addEventListener('load', function () {
   var _allNotes     = [];
   var _expanded     = false;
 
-  // ── Feedback helpers ───────────────────────────────────────────────────────
-
   var _errorTimer   = null;
   var _successTimer = null;
 
@@ -282,8 +282,6 @@ window.addEventListener('load', function () {
     if (successEl) successEl.style.setProperty('display', 'none', 'important');
   }
 
-  // ── Counter helpers ────────────────────────────────────────────────────────
-
   function updateCounter(counterEl, current, min, max) {
     if (!counterEl) return;
     if (current === 0) {
@@ -300,8 +298,6 @@ window.addEventListener('load', function () {
       counterEl.style.color = '#64794E';
     }
   }
-
-  // ── Pagination anchor ──────────────────────────────────────────────────────
 
   function getPaginationAnchor() {
     var list = document.querySelector('.member-notes_list');
@@ -320,8 +316,6 @@ window.addEventListener('load', function () {
     if (Array.isArray(live)) _allNotes = live.slice();
     return _allNotes;
   }
-
-  // ── Boot ───────────────────────────────────────────────────────────────────
 
   var checkReady = setInterval(async function () {
     var recipe = window.Wized?.data?.r?.get_recipe?.data?.[0];
@@ -357,8 +351,6 @@ window.addEventListener('load', function () {
   }, 200);
 
   setTimeout(function () { clearInterval(checkReady); }, 10000);
-
-  // ── Quill ──────────────────────────────────────────────────────────────────
 
   function initCreateQuill() {
     var syncInput = document.querySelector('.create-note_form-details-input');
@@ -403,8 +395,6 @@ window.addEventListener('load', function () {
     return html;
   }
 
-  // ── Validation ─────────────────────────────────────────────────────────────
-
   function validateForm() {
     var submitBtn = document.querySelector('.note-create_submit');
     if (!submitBtn) return;
@@ -429,8 +419,6 @@ window.addEventListener('load', function () {
     submitBtn.style.opacity       = isValid ? '1'    : '0.4';
     submitBtn.style.pointerEvents = isValid ? 'auto' : 'none';
   }
-
-  // ── Create form ────────────────────────────────────────────────────────────
 
   function initCreateForm() {
     var submitBtn       = document.querySelector('.note-create_submit');
@@ -496,8 +484,6 @@ window.addEventListener('load', function () {
       });
     }
 
-    // ── Photo upload ──────────────────────────────────────────────────────────
-
     var fileInput    = document.createElement('input');
     fileInput.type   = 'file';
     fileInput.accept = 'image/jpeg,image/png,image/webp';
@@ -550,8 +536,6 @@ window.addEventListener('load', function () {
       };
       reader.readAsDataURL(file);
     });
-
-    // ── Submit ────────────────────────────────────────────────────────────────
 
     if (submitBtn) {
       submitBtn.addEventListener('click', async function () {
@@ -635,8 +619,6 @@ window.addEventListener('load', function () {
             return;
           }
 
-          // ── Reset form ────────────────────────────────────────────────────
-
           if (thoughtsEl) thoughtsEl.value = '';
           if (triedEl)    triedEl.value    = '';
           if (_createQuill) _createQuill.setText('');
@@ -671,8 +653,6 @@ window.addEventListener('load', function () {
   }
 
   var _currentSort = 'newest';
-
-  // ── Sorting ────────────────────────────────────────────────────────────────
 
   function initSorting() {
     var trigger     = document.querySelector('[wized="sort-trigger"]');
@@ -712,13 +692,11 @@ window.addEventListener('load', function () {
         if (radioNewest.checked) applySort('newest');
       });
     }
-
     if (radioOldest) {
       radioOldest.addEventListener('change', function() {
         if (radioOldest.checked) applySort('oldest');
       });
     }
-
     if (radioMine) {
       radioMine.addEventListener('change', function() {
         if (radioMine.checked) {
@@ -728,8 +706,6 @@ window.addEventListener('load', function () {
       });
     }
   }
-
-  // ── Toggle button ──────────────────────────────────────────────────────────
 
   function initLoadMoreButton() {
     var anchor = getPaginationAnchor();
@@ -741,8 +717,6 @@ window.addEventListener('load', function () {
       renderNotes(false);
     }, true);
   }
-
-  // ── Notes rendering ────────────────────────────────────────────────────────
 
   function waitForNotesAndRender() {
     var checkNotes = setInterval(function () {
@@ -812,8 +786,6 @@ window.addEventListener('load', function () {
     }
   }
 
-  // ── Empty state ────────────────────────────────────────────────────────────
-
   function handleEmptyState(isEmpty) {
     var wrapper      = document.querySelector('.member-notes_controls-empty');
     var loggedOut    = document.querySelector('.empty-state_logged-out');
@@ -838,8 +810,6 @@ window.addEventListener('load', function () {
 
     if (wrapper) wrapper.style.removeProperty('display');
   }
-
-  // ── Build card ─────────────────────────────────────────────────────────────
 
   function buildNoteCard(note) {
     var template = document.querySelector('.note-card_member');
@@ -1037,9 +1007,7 @@ window.addEventListener('load', function () {
     _recipeId = recipe.id;
 
     var isOwner = _session && _session.user.id === recipe.user_id;
-
     if (experienceHeading) experienceHeading.textContent = isOwner ? 'Your Recipe' : 'Your Experience';
-
     setFavoritedState(false);
 
     if (isOwner) {
@@ -1105,13 +1073,10 @@ window.addEventListener('load', function () {
     var active   = card.querySelector('[wized="note-favorite-active"]');
     var inactive = card.querySelector('[wized="note-favorite-inactive"]');
     if (!btn) return;
-
     if (active)   active.style.setProperty('display',   'none',  'important');
     if (inactive) inactive.style.setProperty('display', 'block', 'important');
-
     btn.style.cursor = 'pointer';
     var _pinnedActive = false;
-
     btn.addEventListener('click', function() {
       _pinnedActive = !_pinnedActive;
       if (active)   active.style.setProperty('display',   _pinnedActive ? 'block' : 'none',  'important');
@@ -1142,7 +1107,6 @@ window.addEventListener('load', function () {
       if (_busy) return;
       _busy = true;
       btn.style.opacity = '0.5';
-
       var nowFavorited = _favoritedNoteIds.has(noteId);
       if (nowFavorited) {
         _supabase.from('note_favorites').delete()
@@ -1188,10 +1152,7 @@ window.addEventListener('load', function () {
       ownerLabel.removeAttribute('href');
       ownerLabel.style.cursor        = 'default';
       ownerLabel.style.pointerEvents = 'none';
-      ownerLabel.addEventListener('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-      });
+      ownerLabel.addEventListener('click', function(e) { e.preventDefault(); e.stopPropagation(); });
       if (isOwnRecipe) {
         ownerLabel.style.setProperty('display', 'block', 'important');
       } else {
@@ -1219,9 +1180,7 @@ window.addEventListener('load', function () {
     });
   }
 
-  var observer = new MutationObserver(function() {
-    wireCommunityNoteCards();
-  });
+  var observer = new MutationObserver(function() { wireCommunityNoteCards(); });
   observer.observe(document.body, { childList: true, subtree: true });
 
   var checkReady = setInterval(async function() {
@@ -1229,7 +1188,6 @@ window.addEventListener('load', function () {
     if (!recipe) return;
     clearInterval(checkReady);
     _recipeId = recipe.id;
-
     await fetchFavoritedNotes();
     wirePinnedNoteCard(recipe);
     wireCommunityNoteCards();
@@ -1268,16 +1226,13 @@ window.addEventListener('load', function() {
   var shareBtn          = document.querySelector('[wized="recipe-share"]');
   var modalHeading      = document.querySelector('[wized="share-modal-heading"]');
   var modalSubheading   = document.querySelector('[wized="share-modal-subheading"]');
-
   var pinterest         = document.querySelector('[wized="share-pinterest"]');
   var facebook          = document.querySelector('[wized="share-facebook"]');
   var reddit            = document.querySelector('[wized="share-reddit"]');
   var twitter           = document.querySelector('[wized="share-twitter"]');
   var whatsapp          = document.querySelector('[wized="share-whatsapp"]');
-
   var copyLinkBtn       = document.querySelector('[wized="share-copy-link"]');
   var copyConfirm       = document.querySelector('[wized="share-copy-confirm"]');
-
   var emailHeader       = document.querySelector('[wized="share-email-header"]');
   var emailContent      = document.querySelector('[wized="share-email-content"]');
   var emailChevron      = document.querySelector('[wized="share-email-chevron"]');
@@ -1374,9 +1329,7 @@ window.addEventListener('load', function() {
 
   if (shareBtn) {
     shareBtn.style.cursor = 'pointer';
-    shareBtn.addEventListener('click', function() {
-      openModal('Share Recipe:', 'Share with:', _recipeUrl);
-    });
+    shareBtn.addEventListener('click', function() { openModal('Share Recipe:', 'Share with:', _recipeUrl); });
   }
 
   if (closeBtn) {
@@ -1384,9 +1337,7 @@ window.addEventListener('load', function() {
     closeBtn.addEventListener('click', function() { closeModal(); });
   }
 
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') closeModal();
-  });
+  document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeModal(); });
 
   wireIcon(pinterest, 'pinterest');
   wireIcon(facebook,  'facebook');
@@ -1416,9 +1367,7 @@ window.addEventListener('load', function() {
 
   if (emailHeader) {
     emailHeader.style.cursor = 'pointer';
-    emailHeader.addEventListener('click', function() {
-      if (_emailOpen) closeEmail(); else openEmail();
-    });
+    emailHeader.addEventListener('click', function() { if (_emailOpen) closeEmail(); else openEmail(); });
   }
 
   if (sendSomeone) {
@@ -1452,13 +1401,10 @@ window.addEventListener('load', function() {
         showFeedback(errorEl, 'Please enter a valid email address.');
         return;
       }
-
       var isSelf     = sendMyself && sendMyself.checked;
       var newsletter = newsletterCb && newsletterCb.checked;
-
       sendBtn.style.opacity       = '0.5';
       sendBtn.style.pointerEvents = 'none';
-
       try {
         var { error } = await _supabase.functions.invoke('share-recipe-email', {
           body: {
@@ -1469,12 +1415,9 @@ window.addEventListener('load', function() {
             newsletter:   newsletter
           }
         });
-
         if (error) throw error;
-
         showFeedback(successEl, isSelf ? 'Sent to your inbox!' : 'Shared successfully!');
         if (emailInput) emailInput.value = '';
-
       } catch(err) {
         showFeedback(errorEl, 'Something went wrong. Please try again.');
       } finally {
