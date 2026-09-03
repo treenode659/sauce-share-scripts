@@ -1,6 +1,19 @@
 document.addEventListener("DOMContentLoaded", function() {
   const progressBarFill = document.querySelector('.progress-bar_fill');
-  const progressText = document.querySelector('.progress-bar_label');
+  const progressText    = document.querySelector('.progress-bar_label');
+  const writeNoteEl     = document.querySelector('[wized="progress-write-note"]');
+
+  // Hide "Write a note" on load
+  if (writeNoteEl) writeNoteEl.style.setProperty('display', 'none', 'important');
+
+  // Scroll to note form when clicked
+  if (writeNoteEl) {
+    writeNoteEl.style.cursor = 'pointer';
+    writeNoteEl.addEventListener('click', function() {
+      var target = document.querySelector('.member-notes_controls');
+      if (target) target.scrollIntoView({ behavior: 'smooth' });
+    });
+  }
 
   function setupCheckboxes() {
     const rows = document.querySelectorAll('.recipe-ingredients_item, .recipe-directions_item');
@@ -24,6 +37,12 @@ document.addEventListener("DOMContentLoaded", function() {
       const percentage = Math.round((checked.length / all.length) * 100);
       if (progressBarFill) progressBarFill.style.width = percentage + '%';
       if (progressText)    progressText.innerText = percentage + '% Complete';
+
+      // Show/hide "Write a note" based on completion
+      if (writeNoteEl) {
+        if (percentage === 100) writeNoteEl.style.removeProperty('display');
+        else                    writeNoteEl.style.setProperty('display', 'none', 'important');
+      }
     }
   }
 
@@ -1180,14 +1199,9 @@ window.addEventListener('load', function () {
       });
     }
 
-    // Hide "your note" owner label for non-owners.
-    // Use setProperty (not removeProperty) to override any CSS hiding.
-    // note-upvote_wrapper contains pinned-note-owner-label so we must NOT hide the
-    // wrapper — hide only the heart button elements instead.
     var ownerLabel  = card.querySelector('[wized="pinned-note-owner-label"]');
     var isOwnRecipe = _session && recipe.user_id === _session.user.id;
     if (ownerLabel) {
-      // Strip link behaviour — Webflow may have set this as an anchor
       ownerLabel.removeAttribute('href');
       ownerLabel.style.cursor        = 'default';
       ownerLabel.style.pointerEvents = 'none';
@@ -1202,14 +1216,10 @@ window.addEventListener('load', function () {
       }
     }
 
-    // Hide hearts on pinned notes entirely.
-    // Target the actual heart button, NOT the wrapper (which contains the owner label).
-    // Try wized attribute first, then class-based selectors.
     var heartBtn = card.querySelector('[wized="note-favorite-btn"]') ||
                    card.querySelector('[wized="note-favorite-active"]')?.parentElement ||
                    card.querySelector('.note-engagement_upvote-count');
     if (heartBtn) heartBtn.style.setProperty('display', 'none', 'important');
-    // Also hide active/inactive SVGs directly in case they're not wrapped
     ['[wized="note-favorite-active"]','[wized="note-favorite-inactive"]'].forEach(function(sel) {
       var el = card.querySelector(sel);
       if (el) el.style.setProperty('display', 'none', 'important');
@@ -1306,7 +1316,7 @@ window.addEventListener('load', function() {
   var errorEl           = document.querySelector('[wized="share-error"]');
 
   var _emailOpen   = false;
-  var _shareUrl    = window.location.href; // updated per context (recipe or note)
+  var _shareUrl    = window.location.href;
   var _recipeTitle = '';
   var _recipeUrl   = window.location.href;
 
@@ -1423,7 +1433,6 @@ window.addEventListener('load', function() {
     copyLinkBtn.style.cursor = 'pointer';
     copyLinkBtn.addEventListener('click', function() {
       if (!navigator.clipboard) {
-        // Fallback for browsers without clipboard API
         var ta = document.createElement('textarea');
         ta.value = _shareUrl;
         document.body.appendChild(ta);
@@ -1536,7 +1545,6 @@ window.addEventListener('load', function() {
     document.querySelectorAll('[data-note-id]').forEach(wireNoteShareBtn);
   });
   shareObserver.observe(document.body, { childList: true, subtree: true });
-  // Wire any cards already in the DOM
   document.querySelectorAll('[data-note-id]').forEach(wireNoteShareBtn);
 
   // ── Boot ──────────────────────────────────────────────────────────────────────
