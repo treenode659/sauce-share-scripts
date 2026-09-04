@@ -831,11 +831,6 @@ window.addEventListener('load', function () {
     card.setAttribute('data-note-id', note.id);
     card.setAttribute('data-note-owner-id', note.user_id || '');
 
-    // note-card_member has a 72px flex gap which creates a huge space between
-    // note-card_inner and note-engagement when optional blocks are removed.
-    // Override it to a sensible value.
-    card.style.setProperty('row-gap', '1rem', 'important');
-
     var mealContent = card.querySelector('.note-details_meal-content');
     if (mealContent) mealContent.removeAttribute('data-read-more-init');
 
@@ -892,8 +887,8 @@ window.addEventListener('load', function () {
         if (mealContentEl) mealContentEl.style.removeProperty('display');
         detailsBlock.style.removeProperty('display');
       } else {
-        // No meal details — remove the block entirely so it can't leave a gap
-        detailsBlock.remove();
+        if (mealContentEl) mealContentEl.style.setProperty('display', 'none', 'important');
+        detailsBlock.style.setProperty('display', 'none', 'important');
       }
     }
 
@@ -907,8 +902,7 @@ window.addEventListener('load', function () {
       }
       if (mediaEl) mediaEl.style.removeProperty('display');
     } else {
-      // No photo — remove the media block entirely so it can't leave a gap
-      if (mediaEl) mediaEl.remove();
+      if (mediaEl) mediaEl.style.setProperty('display', 'none', 'important');
     }
 
     var badgeEl = card.querySelector('.note-meta_badge');
