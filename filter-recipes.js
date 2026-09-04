@@ -44,6 +44,48 @@ document.addEventListener('click', function(e) {
 document.addEventListener('click', function(e) {
   var trigger = e.target.closest('.accordion_closed');
   if (!trigger) return;
+
+  // If this accordion is inside the add-recipe card and the user is logged out,
+  // show the same toast used for the heart button and do nothing else.
+  var addRecipeCard = trigger.closest('[wized="add-recipe-card"]') || trigger.closest('.add-recipe_card');
+  if (addRecipeCard) {
+    var session = window._filterCardSession || null;
+    if (!session) {
+      // Reuse the toast from the favorites section if available,
+      // otherwise fire a quick inline toast.
+      var existing = document.getElementById('fc-toast');
+      if (existing) existing.remove();
+      var toast = document.createElement('div');
+      toast.id = 'fc-toast';
+      toast.innerText = 'Log in or become a member to upload recipes.';
+      toast.style.cssText = [
+        'position:fixed',
+        'bottom:24px',
+        'left:50%',
+        'transform:translateX(-50%)',
+        'background:#2e2a26',
+        'color:#f9f5ef',
+        'padding:12px 20px',
+        'border-radius:8px',
+        'font-size:14px',
+        'z-index:99999',
+        'opacity:0',
+        'transition:opacity 0.3s ease',
+        'pointer-events:none',
+        'white-space:nowrap'
+      ].join(';');
+      document.body.appendChild(toast);
+      requestAnimationFrame(function() {
+        requestAnimationFrame(function() { toast.style.opacity = '1'; });
+      });
+      setTimeout(function() {
+        toast.style.opacity = '0';
+        setTimeout(function() { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 300);
+      }, 3000);
+      return;
+    }
+  }
+
   var card = trigger.closest('.recipe-card');
   if (!card) return;
   var content = card.querySelector('.recipe-card_ingredient-content');
