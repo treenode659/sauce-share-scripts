@@ -1153,9 +1153,9 @@ window.addEventListener('load', function () {
     if (!card) return;
 
     // Set gap after the card is already in the live DOM so the override wins
-    card.style.setProperty('row-gap', '2rem', 'important');
+    card.style.setProperty('row-gap', '2.5rem', 'important');
     var pinnedInner = card.querySelector('.note-card_inner');
-    if (pinnedInner) pinnedInner.style.setProperty('row-gap', '2rem', 'important');
+    if (pinnedInner) pinnedInner.style.setProperty('row-gap', '2.5rem', 'important');
 
     var usernameEl = card.querySelector('[wized="note-username"]');
     if (usernameEl && recipe.profiles?.username) {
