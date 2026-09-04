@@ -45,14 +45,16 @@ document.addEventListener('click', function(e) {
   var trigger = e.target.closest('.accordion_closed');
   if (!trigger) return;
 
-  // If this accordion is inside the add-recipe card and the user is logged out,
-  // show the same toast used for the heart button and do nothing else.
-  var addRecipeCard = trigger.closest('[wized="add-recipe-card"]') || trigger.closest('.add-recipe_card');
+  var addRecipeCard = trigger.closest('.add-recipe_card');
   if (addRecipeCard) {
-    var session = window._filterCardSession || null;
-    if (!session) {
-      // Reuse the toast from the favorites section if available,
-      // otherwise fire a quick inline toast.
+    if (!window._filterCardSession) {
+      // Force the details wrapper closed — Webflow's native interaction
+      // will open it before this runs, so we shut it immediately after.
+      setTimeout(function() {
+        var wrapper = addRecipeCard.querySelector('.add-recipe_section-details-wrapper');
+        if (wrapper) wrapper.style.setProperty('display', 'none', 'important');
+      }, 0);
+
       var existing = document.getElementById('fc-toast');
       if (existing) existing.remove();
       var toast = document.createElement('div');
@@ -82,8 +84,8 @@ document.addEventListener('click', function(e) {
         toast.style.opacity = '0';
         setTimeout(function() { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 300);
       }, 3000);
-      return;
     }
+    return;
   }
 
   var card = trigger.closest('.recipe-card');
