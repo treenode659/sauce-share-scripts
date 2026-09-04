@@ -25,8 +25,6 @@ document.addEventListener("DOMContentLoaded", function() {
       if (progressBarFill) progressBarFill.style.width = percentage + '%';
 
       if (progressText) {
-        // First run: turn the label into a flex row with two spans inside —
-        // the percentage text (left) and "Write a note" (right).
         var pctSpan = progressText.querySelector('#script-pct-text');
         if (!pctSpan) {
           progressText.innerHTML = '';
@@ -830,6 +828,11 @@ window.addEventListener('load', function () {
     card.style.removeProperty('display');
     card.setAttribute('data-note-id', note.id);
     card.setAttribute('data-note-owner-id', note.user_id || '');
+
+    // note-card_member has a 72px row-gap in Webflow which creates a large
+    // empty space between content and engagement when optional blocks are
+    // hidden. Override it to a sensible value.
+    card.style.setProperty('row-gap', '1.5rem', 'important');
 
     var mealContent = card.querySelector('.note-details_meal-content');
     if (mealContent) mealContent.removeAttribute('data-read-more-init');
