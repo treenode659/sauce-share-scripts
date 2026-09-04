@@ -299,7 +299,7 @@ window.addEventListener('load', function () {
       counterEl.textContent = '0 / ' + max + ' characters';
       counterEl.style.color = '';
     } else if (current < min) {
-      counterEl.textContent = 'Needs min ' + min + ' characters (' + current + ' so far)';
+      counterEl.textContent = current + ' / ' + max + ' — need ' + min + ' min';
       counterEl.style.color = '#D77F42';
     } else if (current > max) {
       counterEl.textContent = current + ' / ' + max + ' — too long';
