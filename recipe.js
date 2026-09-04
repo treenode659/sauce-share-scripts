@@ -33,10 +33,10 @@ document.addEventListener("DOMContentLoaded", function() {
         writeNoteEl.textContent = 'Write a note';
         writeNoteEl.style.cssText = 'display:none;cursor:pointer;color:#64794E;text-decoration:underline;font-family:"Lora Main",Lora,serif;font-size:1rem;';
         writeNoteEl.addEventListener('click', function() {
-          var target = document.querySelector('.member-notes_controls');
+          var target = document.getElementById('notes-form') || document.querySelector('.member-notes_controls');
           if (target) target.scrollIntoView({ behavior: 'smooth' });
         });
-        progressText.parentElement.appendChild(writeNoteEl);
+        progressText.after(writeNoteEl);
       }
 
       if (writeNoteEl) {
