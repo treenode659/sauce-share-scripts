@@ -889,6 +889,8 @@ window.addEventListener('load', function () {
       } else {
         if (mealContentEl) mealContentEl.style.setProperty('display', 'none', 'important');
         detailsBlock.style.setProperty('display', 'none', 'important');
+        detailsBlock.style.setProperty('margin', '0', 'important');
+        detailsBlock.style.setProperty('padding', '0', 'important');
       }
     }
 
@@ -902,7 +904,11 @@ window.addEventListener('load', function () {
       }
       if (mediaEl) mediaEl.style.removeProperty('display');
     } else {
-      if (mediaEl) mediaEl.style.setProperty('display', 'none', 'important');
+      if (mediaEl) {
+        mediaEl.style.setProperty('display', 'none', 'important');
+        mediaEl.style.setProperty('margin', '0', 'important');
+        mediaEl.style.setProperty('padding', '0', 'important');
+      }
     }
 
     var badgeEl = card.querySelector('.note-meta_badge');
