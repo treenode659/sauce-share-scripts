@@ -779,6 +779,8 @@ window.addEventListener('load', function () {
       var card = buildNoteCard(note);
       if (anchor && anchor.parentElement === list) list.insertBefore(card, anchor);
       else list.appendChild(card);
+      // Set gap after insertion so the inline style takes effect in the live DOM
+      card.style.setProperty('row-gap', '1rem', 'important');
     });
 
     if (anchor) {
@@ -828,11 +830,6 @@ window.addEventListener('load', function () {
     card.style.removeProperty('display');
     card.setAttribute('data-note-id', note.id);
     card.setAttribute('data-note-owner-id', note.user_id || '');
-
-    // note-card_member has a 72px row-gap in Webflow which creates a large
-    // empty space between content and engagement when optional blocks are
-    // hidden. Override it to a sensible value.
-    card.style.setProperty('row-gap', '1.5rem', 'important');
 
     var mealContent = card.querySelector('.note-details_meal-content');
     if (mealContent) mealContent.removeAttribute('data-read-more-init');
@@ -906,13 +903,6 @@ window.addEventListener('load', function () {
       if (mediaEl) mediaEl.style.removeProperty('display');
     } else {
       if (mediaEl) mediaEl.style.setProperty('display', 'none', 'important');
-    }
-
-    // On mobile, add top margin to note-engagement so it doesn't sit
-    // flush against the photo or last content block.
-    var engagementEl = card.querySelector('.note-engagement');
-    if (engagementEl && window.innerWidth <= 767) {
-      engagementEl.style.setProperty('margin-top', '0.75rem', 'important');
     }
 
     var badgeEl = card.querySelector('.note-meta_badge');
@@ -1158,12 +1148,6 @@ window.addEventListener('load', function () {
   function wirePinnedNoteCard(recipe) {
     var card = document.querySelector('[wized="recipe-pinned-note-card"]');
     if (!card) return;
-
-    // Pinned note card has a 48px row-gap and note-card_inner has 40px —
-    // both create large empty space when optional blocks are absent.
-    card.style.setProperty('row-gap', '1.5rem', 'important');
-    var pinnedInner = card.querySelector('.note-card_inner');
-    if (pinnedInner) pinnedInner.style.setProperty('row-gap', '1.5rem', 'important');
 
     var usernameEl = card.querySelector('[wized="note-username"]');
     if (usernameEl && recipe.profiles?.username) {
