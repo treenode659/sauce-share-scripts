@@ -832,7 +832,7 @@ window.addEventListener('load', function () {
     // note-card_member has a 72px row-gap in Webflow which creates a large
     // empty space between content and engagement when optional blocks are
     // hidden. Override it to a sensible value.
-    card.style.setProperty('row-gap', '3rem', 'important');
+    card.style.setProperty('row-gap', '2.5rem', 'important');
 
     var mealContent = card.querySelector('.note-details_meal-content');
     if (mealContent) mealContent.removeAttribute('data-read-more-init');
