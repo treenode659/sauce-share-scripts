@@ -911,12 +911,6 @@ window.addEventListener('load', function () {
       if (mediaEl) mediaEl.remove();
     }
 
-    // Override the flex row gap on note-card_inner to a tighter value —
-    // the Webflow default (5.5rem) is too large on mobile when optional
-    // blocks (details, media) are absent.
-    var cardInner = card.querySelector('.note-card_inner');
-    if (cardInner) cardInner.style.setProperty('row-gap', '1rem', 'important');
-
     var badgeEl = card.querySelector('.note-meta_badge');
     if (badgeEl) badgeEl.style.setProperty('display', 'none', 'important');
 
