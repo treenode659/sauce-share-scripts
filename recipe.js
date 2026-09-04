@@ -23,26 +23,41 @@ document.addEventListener("DOMContentLoaded", function() {
     if (all.length > 0) {
       const percentage = Math.round((checked.length / all.length) * 100);
       if (progressBarFill) progressBarFill.style.width = percentage + '%';
-      if (progressText)    progressText.innerText = percentage + '% Complete';
 
-      // Create the element if it doesn't exist yet
-      var writeNoteEl = document.getElementById('script-write-note');
-      if (!writeNoteEl && progressText) {
-          progressText.style.flex = '0 0 auto';
-        writeNoteEl = document.createElement('div');
-        writeNoteEl.id = 'script-write-note';
-        writeNoteEl.textContent = 'Write a note';
-        writeNoteEl.style.cssText = 'display:none;cursor:pointer;color:#64794E;text-decoration:underline;font-family:"Lora Main",Lora,serif;font-size:1rem;margin-left:auto;white-space:nowrap;align-self:center;';
-        progressText.parentElement.style.alignItems = 'center';
-        writeNoteEl.addEventListener('click', function() {
-          var target = document.getElementById('notes-form') || document.querySelector('.member-notes_controls');
-          if (target) target.scrollIntoView({ behavior: 'smooth' });
-        });
-        progressText.after(writeNoteEl);
-      }
+      if (progressText) {
+        // First run: turn the label into a flex row with two spans inside —
+        // the percentage text (left) and "Write a note" (right).
+        var pctSpan = progressText.querySelector('#script-pct-text');
+        if (!pctSpan) {
+          progressText.innerHTML = '';
+          progressText.style.display        = 'flex';
+          progressText.style.flexDirection  = 'row';
+          progressText.style.flexWrap       = 'nowrap';
+          progressText.style.alignItems     = 'center';
+          progressText.style.justifyContent = 'space-between';
+          progressText.style.width          = '100%';
 
-      if (writeNoteEl) {
-        writeNoteEl.style.display = percentage === 100 ? 'block' : 'none';
+          pctSpan = document.createElement('span');
+          pctSpan.id = 'script-pct-text';
+          progressText.appendChild(pctSpan);
+
+          var writeNoteEl = document.createElement('span');
+          writeNoteEl.id = 'script-write-note';
+          writeNoteEl.textContent = 'Write a note';
+          writeNoteEl.style.cssText = 'display:none;cursor:pointer;color:#64794E;text-decoration:underline;white-space:nowrap;';
+          writeNoteEl.addEventListener('click', function() {
+            var target = document.getElementById('notes-form') || document.querySelector('.member-notes_controls');
+            if (target) target.scrollIntoView({ behavior: 'smooth' });
+          });
+          progressText.appendChild(writeNoteEl);
+        }
+
+        pctSpan.textContent = percentage + '% Complete';
+
+        var writeNoteToggle = document.getElementById('script-write-note');
+        if (writeNoteToggle) {
+          writeNoteToggle.style.display = percentage === 100 ? 'inline' : 'none';
+        }
       }
     }
   }
