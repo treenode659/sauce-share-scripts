@@ -98,6 +98,12 @@ document.addEventListener('DOMContentLoaded', function () {
     var readLess = block.querySelector('.text-read-less');
     if (!textEl || !readMore || !readLess) return;
 
+    // Already processed — do NOT re-apply styles or re-measure. Re-running the
+    // clamp + checkOverflow reads on every observer fire forces a layout reflow
+    // and is what makes the page jitter while typing in the note form (setting
+    // the counter's textContent triggers this body-level observer every keystroke).
+    if (block.dataset.readMoreInit === 'true') return;
+
     if (!block.dataset.readMoreInit) {
       block.dataset.readMoreInit = 'true';
 
@@ -166,7 +172,20 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   scanForBlocks();
-  var observer = new MutationObserver(scanForBlocks);
+  var observer = new MutationObserver(function (mutations) {
+    // Only react when a meal-content block is actually added to the DOM.
+    // Ignore unrelated mutations (e.g. the note-form counter updating its text
+    // on every keystroke), which would otherwise trigger a full re-scan/reflow.
+    var relevant = mutations.some(function (m) {
+      return Array.prototype.some.call(m.addedNodes, function (n) {
+        return n.nodeType === 1 && (
+          (n.matches && n.matches('.note-details_meal-content')) ||
+          (n.querySelector && n.querySelector('.note-details_meal-content'))
+        );
+      });
+    });
+    if (relevant) scanForBlocks();
+  });
   observer.observe(document.body, { childList: true, subtree: true });
 });
 
@@ -1263,7 +1282,14 @@ window.addEventListener('load', function () {
     });
   }
 
-  var observer = new MutationObserver(function() { wireCommunityNoteCards(); });
+  var observer = new MutationObserver(function(mutations) {
+    // Skip mutations that add no elements (e.g. the note-form counter changing
+    // its text every keystroke) so we don't re-query the whole document.
+    var addedEl = mutations.some(function(m) {
+      return Array.prototype.some.call(m.addedNodes, function(n) { return n.nodeType === 1; });
+    });
+    if (addedEl) wireCommunityNoteCards();
+  });
   observer.observe(document.body, { childList: true, subtree: true });
 
   var checkReady = setInterval(async function() {
@@ -1522,8 +1548,13 @@ window.addEventListener('load', function() {
     });
   }
 
-  var shareObserver = new MutationObserver(function() {
-    document.querySelectorAll('[data-note-id]').forEach(wireNoteShareBtn);
+  var shareObserver = new MutationObserver(function(mutations) {
+    // Skip mutations that add no elements (e.g. the note-form counter changing
+    // its text every keystroke) so we don't re-query the whole document.
+    var addedEl = mutations.some(function(m) {
+      return Array.prototype.some.call(m.addedNodes, function(n) { return n.nodeType === 1; });
+    });
+    if (addedEl) document.querySelectorAll('[data-note-id]').forEach(wireNoteShareBtn);
   });
   shareObserver.observe(document.body, { childList: true, subtree: true });
   document.querySelectorAll('[data-note-id]').forEach(wireNoteShareBtn);
