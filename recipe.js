@@ -2,16 +2,6 @@ document.addEventListener("DOMContentLoaded", function() {
   const progressBarFill = document.querySelector('.progress-bar_fill');
   const progressText    = document.querySelector('.progress-bar_label');
 
-  // Event delegation — works even if the element isn't in the DOM yet
-  document.addEventListener('click', function(e) {
-    var writeNoteEl = document.querySelector('[wized="progress-write-note"]') ||
-                      document.querySelector('.progress-bar_note-scroll');
-    if (writeNoteEl && writeNoteEl.contains(e.target)) {
-      var target = document.querySelector('.member-notes_controls');
-      if (target) target.scrollIntoView({ behavior: 'smooth' });
-    }
-  });
-
   function setupCheckboxes() {
     const rows = document.querySelectorAll('.recipe-ingredients_item, .recipe-directions_item');
     rows.forEach(row => {
@@ -35,16 +25,22 @@ document.addEventListener("DOMContentLoaded", function() {
       if (progressBarFill) progressBarFill.style.width = percentage + '%';
       if (progressText)    progressText.innerText = percentage + '% Complete';
 
-      // Target by both wized attribute AND Webflow class name as fallback
-      var writeNoteEl = document.querySelector('[wized="progress-write-note"]') ||
-                        document.querySelector('.progress-bar_note-scroll');
-      console.log('updateProgress:', percentage + '%', 'writeNoteEl found:', !!writeNoteEl);
+      // Create the element if it doesn't exist yet
+      var writeNoteEl = document.getElementById('script-write-note');
+      if (!writeNoteEl && progressText) {
+        writeNoteEl = document.createElement('div');
+        writeNoteEl.id = 'script-write-note';
+        writeNoteEl.textContent = 'Write a note';
+        writeNoteEl.style.cssText = 'display:none;cursor:pointer;color:#64794E;text-decoration:underline;font-family:"Lora Main",Lora,serif;font-size:1rem;';
+        writeNoteEl.addEventListener('click', function() {
+          var target = document.querySelector('.member-notes_controls');
+          if (target) target.scrollIntoView({ behavior: 'smooth' });
+        });
+        progressText.parentElement.appendChild(writeNoteEl);
+      }
+
       if (writeNoteEl) {
-        if (percentage === 100) {
-          writeNoteEl.setAttribute('style', 'display: block !important; cursor: pointer;');
-        } else {
-          writeNoteEl.setAttribute('style', 'display: none !important;');
-        }
+        writeNoteEl.style.display = percentage === 100 ? 'block' : 'none';
       }
     }
   }
