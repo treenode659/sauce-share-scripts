@@ -45,16 +45,13 @@ document.addEventListener('click', function(e) {
   var trigger = e.target.closest('.accordion_closed');
   if (!trigger) return;
 
+  // If this accordion is inside the add-recipe card, handle auth gate.
   var addRecipeCard = trigger.closest('.add-recipe_card');
   if (addRecipeCard) {
     if (!window._filterCardSession) {
-      // Force the details wrapper closed — Webflow's native interaction
-      // will open it before this runs, so we shut it immediately after.
-      setTimeout(function() {
-        var wrapper = addRecipeCard.querySelector('.add-recipe_section-details-wrapper');
-        if (wrapper) wrapper.style.setProperty('display', 'none', 'important');
-      }, 0);
-
+      // User is logged out — show toast and keep details hidden.
+      // The MutationObserver below enforces display:none in case
+      // Webflow's native interaction fires after this handler.
       var existing = document.getElementById('fc-toast');
       if (existing) existing.remove();
       var toast = document.createElement('div');
@@ -85,6 +82,7 @@ document.addEventListener('click', function(e) {
         setTimeout(function() { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 300);
       }, 3000);
     }
+    // Always return — logged-in users use Webflow's native accordion on the add-recipe card.
     return;
   }
 
@@ -110,6 +108,26 @@ document.addEventListener('click', function(e) {
     arrow.style.transition = 'transform 0.3s ease';
     arrow.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
   }
+});
+
+// ============================================
+// GUARD: keep add-recipe details closed when logged out
+// Webflow's native interaction may open add-recipe_section-details-wrapper
+// after our click handler returns. A MutationObserver watches the element's
+// style attribute and immediately forces display:none back whenever it changes
+// while no session is present.
+// ============================================
+window.addEventListener('load', function() {
+  var wrapper = document.querySelector('.add-recipe_section-details-wrapper');
+  if (!wrapper) return;
+
+  var obs = new MutationObserver(function() {
+    if (!window._filterCardSession) {
+      wrapper.style.setProperty('display', 'none', 'important');
+    }
+  });
+
+  obs.observe(wrapper, { attributes: true, attributeFilter: ['style'] });
 });
 
 // ============================================
