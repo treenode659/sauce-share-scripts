@@ -482,13 +482,73 @@ window.addEventListener('load', function () {
         });
     }
 
+    // ─── Mobile scroll-lock helpers ───────────────────────────────────────────
+    // When a textarea is focused on mobile, member-notes_controls has
+    // overflow:auto which creates a competing scroll container. The iOS browser
+    // then fights between scrolling the page and scrolling the container on
+    // every keystroke, causing jitter. Mirroring the add-recipe expand pattern,
+    // we temporarily fix the container to the viewport while any form textarea
+    // is active, then restore it on blur.
+
+    function lockControlsForMobile() {
+      if (window.innerWidth > 767) return;
+      var controls = document.querySelector('.member-notes_controls');
+      if (!controls || controls._mobileLocked) return;
+      controls._mobileLocked = true;
+      controls._savedStyles = {
+        position:  controls.style.position,
+        top:       controls.style.top,
+        left:      controls.style.left,
+        width:     controls.style.width,
+        height:    controls.style.height,
+        overflowY: controls.style.overflowY,
+        zIndex:    controls.style.zIndex
+      };
+      controls.style.position  = 'fixed';
+      controls.style.top       = '0';
+      controls.style.left      = '0';
+      controls.style.width     = '100%';
+      controls.style.height    = '100%';
+      controls.style.overflowY = 'auto';
+      controls.style.zIndex    = '999';
+      document.body.style.overflow = 'hidden';
+    }
+
+    function unlockControlsForMobile() {
+      // Delay so focus transferring between the two textareas doesn't flicker.
+      setTimeout(function() {
+        if (document.activeElement === thoughtsEl || document.activeElement === triedEl) return;
+        var controls = document.querySelector('.member-notes_controls');
+        if (!controls || !controls._mobileLocked) return;
+        controls._mobileLocked = false;
+        var s = controls._savedStyles;
+        if (s) {
+          controls.style.position  = s.position;
+          controls.style.top       = s.top;
+          controls.style.left      = s.left;
+          controls.style.width     = s.width;
+          controls.style.height    = s.height;
+          controls.style.overflowY = s.overflowY;
+          controls.style.zIndex    = s.zIndex;
+          delete controls._savedStyles;
+        }
+        document.body.style.overflow = '';
+      }, 150);
+    }
+    // ──────────────────────────────────────────────────────────────────────────
+
     if (thoughtsEl) {
+      thoughtsEl.addEventListener('focus', lockControlsForMobile,   { passive: true });
+      thoughtsEl.addEventListener('blur',  unlockControlsForMobile, { passive: true });
       thoughtsEl.addEventListener('input', function() {
         updateCounter(thoughtsCounter, thoughtsEl.value.trim().length, THOUGHTS_MIN, THOUGHTS_MAX);
         validateForm();
       });
     }
+
     if (triedEl) {
+      triedEl.addEventListener('focus', lockControlsForMobile,   { passive: true });
+      triedEl.addEventListener('blur',  unlockControlsForMobile, { passive: true });
       triedEl.addEventListener('input', function() {
         updateCounter(triedCounter, triedEl.value.trim().length, TRIED_MIN, TRIED_MAX);
         validateForm();
