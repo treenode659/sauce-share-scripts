@@ -483,28 +483,12 @@ window.addEventListener('load', function () {
     }
 
     if (thoughtsEl) {
-      // Pre-position the field in the visible viewport after the keyboard settles,
-      // so iOS has no scroll adjustment to make while typing.
-      thoughtsEl.addEventListener('focus', function() {
-        setTimeout(function() {
-          thoughtsEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }, 350);
-      }, { passive: true });
-
       thoughtsEl.addEventListener('input', function() {
         updateCounter(thoughtsCounter, thoughtsEl.value.trim().length, THOUGHTS_MIN, THOUGHTS_MAX);
         validateForm();
       });
     }
-
     if (triedEl) {
-      // Same fix applied to the "Tried It On" field.
-      triedEl.addEventListener('focus', function() {
-        setTimeout(function() {
-          triedEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }, 350);
-      }, { passive: true });
-
       triedEl.addEventListener('input', function() {
         updateCounter(triedCounter, triedEl.value.trim().length, TRIED_MIN, TRIED_MAX);
         validateForm();
