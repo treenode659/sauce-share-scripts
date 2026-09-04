@@ -780,7 +780,10 @@ window.addEventListener('load', function () {
       if (anchor && anchor.parentElement === list) list.insertBefore(card, anchor);
       else list.appendChild(card);
       // Set gap after insertion so the inline style takes effect in the live DOM
-      card.style.setProperty('row-gap', '1rem', 'important');
+      card.style.setProperty('row-gap', '2rem', 'important');
+      // Add breathing room above note-engagement on all breakpoints
+      var engEl = card.querySelector('.note-engagement');
+      if (engEl) engEl.style.setProperty('margin-top', '1rem', 'important');
     });
 
     if (anchor) {
