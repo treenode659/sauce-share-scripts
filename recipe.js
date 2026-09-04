@@ -28,6 +28,7 @@ document.addEventListener("DOMContentLoaded", function() {
       // Create the element if it doesn't exist yet
       var writeNoteEl = document.getElementById('script-write-note');
       if (!writeNoteEl && progressText) {
+          progressText.style.flex = '0 0 auto';
         writeNoteEl = document.createElement('div');
         writeNoteEl.id = 'script-write-note';
         writeNoteEl.textContent = 'Write a note';
