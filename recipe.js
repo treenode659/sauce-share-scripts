@@ -887,10 +887,8 @@ window.addEventListener('load', function () {
         if (mealContentEl) mealContentEl.style.removeProperty('display');
         detailsBlock.style.removeProperty('display');
       } else {
-        if (mealContentEl) mealContentEl.style.setProperty('display', 'none', 'important');
-        detailsBlock.style.setProperty('display', 'none', 'important');
-        detailsBlock.style.setProperty('margin', '0', 'important');
-        detailsBlock.style.setProperty('padding', '0', 'important');
+        // No meal details — remove the block entirely so it can't leave a gap
+        detailsBlock.remove();
       }
     }
 
@@ -904,11 +902,8 @@ window.addEventListener('load', function () {
       }
       if (mediaEl) mediaEl.style.removeProperty('display');
     } else {
-      if (mediaEl) {
-        mediaEl.style.setProperty('display', 'none', 'important');
-        mediaEl.style.setProperty('margin', '0', 'important');
-        mediaEl.style.setProperty('padding', '0', 'important');
-      }
+      // No photo — remove the media block entirely so it can't leave a gap
+      if (mediaEl) mediaEl.remove();
     }
 
     var badgeEl = card.querySelector('.note-meta_badge');
