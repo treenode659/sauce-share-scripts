@@ -31,7 +31,7 @@ document.addEventListener("DOMContentLoaded", function() {
         writeNoteEl = document.createElement('div');
         writeNoteEl.id = 'script-write-note';
         writeNoteEl.textContent = 'Write a note';
-        writeNoteEl.style.cssText = 'display:none;cursor:pointer;color:#64794E;text-decoration:underline;font-family:"Lora Main",Lora,serif;font-size:1rem;';
+        writeNoteEl.style.cssText = 'display:none;cursor:pointer;color:#64794E;text-decoration:underline;font-family:"Lora Main",Lora,serif;font-size:1rem;margin-left:auto;';
         writeNoteEl.addEventListener('click', function() {
           var target = document.getElementById('notes-form') || document.querySelector('.member-notes_controls');
           if (target) target.scrollIntoView({ behavior: 'smooth' });
