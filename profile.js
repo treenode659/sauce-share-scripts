@@ -501,7 +501,6 @@ window.addEventListener('load', async function() {
 
     var isOwnRecipe = recipe.user_id === userId;
 
-    // "your note" label — static text, only shown for the recipe owner
     var ownerLabel = card.querySelector('[wized="pinned-note-owner-label"]');
     if (ownerLabel) {
       ownerLabel.removeAttribute('href');
@@ -516,7 +515,6 @@ window.addEventListener('load', async function() {
       }
     }
 
-    // Username link — only shown for non-owners, links to the creator's profile
     var usernameLink = card.querySelector('[wized="pinned-note-username"]');
     if (usernameLink) {
       if (!isOwnRecipe && recipe._creatorUsername) {
@@ -534,7 +532,6 @@ window.addEventListener('load', async function() {
       }
     }
 
-    // Edit link: only for owners
     var editLink = card.querySelector('[wized="note-card-edit-link"]');
     if (editLink) {
       if (isOwnRecipe) {
@@ -548,7 +545,6 @@ window.addEventListener('load', async function() {
       }
     }
 
-    // Hearts hidden entirely on pinned notes
     var pinnedFavWrap = card.querySelector('.profile-recipes_note-inactive, .profile-recipes_note-active')?.parentElement || null;
     if (pinnedFavWrap) pinnedFavWrap.style.setProperty('display', 'none', 'important');
 
@@ -640,7 +636,6 @@ window.addEventListener('load', async function() {
       var isOwnNote   = note.user_id === userId;
       var editLink    = card.querySelector('[wized="note-card-edit-link"]');
       var usernameEl  = card.querySelector('[wized="community-note-username"]');
-      // Hearts have no wized attribute — find by class
       var favBtnWrap  = card.querySelector('.profile-recipes_note-inactive, .profile-recipes_note-active')?.parentElement || null;
       var favInactive = card.querySelector('.profile-recipes_note-inactive');
       var favActive   = card.querySelector('.profile-recipes_note-active');
@@ -675,7 +670,6 @@ window.addEventListener('load', async function() {
           var _busy      = false;
           var _favorited = true;
 
-          // Direct listener on the button — avoids document capture closure mismatch on clones
           favBtnWrap.addEventListener('click', function(e) {
             e.stopPropagation();
             if (_busy) return;
@@ -849,7 +843,6 @@ window.addEventListener('load', async function() {
 
     if (instructions) instructions.style.setProperty('display', 'none', 'important');
     if (notesSection) notesSection.style.setProperty('display', 'none', 'important');
-    // noteCardList is NOT pre-hidden here — it will be shown based on content after population
 
     var communityTemplate = drawer ? drawer.querySelector('[wized="recipe-community-note-template"]') : null;
     if (communityTemplate) communityTemplate.style.setProperty('display', 'none', 'important');
@@ -857,16 +850,13 @@ window.addEventListener('load', async function() {
     var pinnedTemplate = drawer ? drawer.querySelector('[wized="recipe-pinned-note-template"]') : null;
     if (pinnedTemplate) pinnedTemplate.style.setProperty('display', 'none', 'important');
 
-    // Always show pinned note if one exists
     if (!!recipe.note_blurb && noteCardList && drawer) populatePinnedNote(drawer, recipe, userId);
 
     var recipeNotes = favoritedNotes || [];
     if (recipeNotes.length > 0 && noteCardList && drawer) populateCommunityNotes(drawer, recipeNotes, userId);
 
-    // Determine whether there is any note content
     var hasNoteContent = !!recipe.note_blurb || recipeNotes.length > 0;
 
-    // noteCardList starts hidden — only shown when user clicks notesToggle
     if (noteCardList) noteCardList.style.setProperty('display', 'none', 'important');
 
     if (notesToggle && noteCardList) {
@@ -883,16 +873,12 @@ window.addEventListener('load', async function() {
       }, true);
     }
 
-    // MutationObserver on the drawer — whenever it becomes visible (regardless of
-    // what mechanism opens it — our code, Wized, or Webflow), ensure notesSection
-    // and noteCardList are shown if there's note content
     if (drawer && hasNoteContent) {
       var drawerObserver = new MutationObserver(function() {
         var drawerVisible = window.getComputedStyle(drawer).display !== 'none';
         if (drawerVisible) {
           if (instructions) instructions.style.setProperty('display', 'flex', 'important');
           if (notesSection)  notesSection.style.setProperty('display', 'flex', 'important');
-          // noteCardList deliberately NOT shown here — it's controlled by notesToggle
         }
       });
       drawerObserver.observe(drawer, { attributes: true, attributeFilter: ['style', 'class'] });
@@ -911,7 +897,6 @@ window.addEventListener('load', async function() {
           drawer.style.setProperty('display', 'block', 'important');
           if (instructions) instructions.style.setProperty('display', 'flex', 'important');
           if (notesSection)  notesSection.style.setProperty('display', 'flex', 'important');
-          // noteCardList deliberately NOT shown here — it's controlled by notesToggle
           if (glanceIcon) glanceIcon.style.transform = 'rotate(180deg)';
         }
       });
@@ -1049,8 +1034,14 @@ window.addEventListener('load', async function() {
           var { error: deleteError } = await _supabase
             .from('recipes').delete()
             .in('id', selectedIds).eq('user_id', userId);
+
           if (deleteError) {
-            alert('Could not delete recipes. Please try again.');
+            var msg = deleteError.message || '';
+            if (msg.includes('deletion_rate_limit_exceeded')) {
+              alert('You\'ve reached the deletion limit for today. You can delete up to 5 recipes per 24 hours.');
+            } else {
+              alert('Could not delete recipes. Please try again.');
+            }
           } else {
             selectedIds.forEach(function(id) {
               var wrapper = document.querySelector('[data-recipe-id="' + id + '"]');
@@ -1405,7 +1396,6 @@ window.addEventListener('load', async function() {
 
     if (!listEl || !templateEl) return;
 
-    // Always hide favorited-notes-empty on load — shown only by loadFavoriteNotes if needed
     if (favNotesEmptyEl) favNotesEmptyEl.style.setProperty('display', 'none', 'important');
 
     if (bulkActionsEl)      bulkActionsEl.style.setProperty('display', 'none', 'important');
@@ -1438,12 +1428,8 @@ window.addEventListener('load', async function() {
       return;
     }
 
-    // Expose favorited recipe IDs so loadFavoriteNotes can skip them
     window._favoritedRecipeIds = new Set(recipes.map(function(r) { return r.id; }));
 
-    // Fetch creator usernames for all unique recipe owners in one direct query.
-    // We avoid relying on nested profiles join in the recipes select because that
-    // requires the FK to be registered in Supabase's PostgREST schema — unreliable.
     var uniqueOwnerIds = Array.from(new Set(
       recipes.map(function(r) { return r.user_id; }).filter(Boolean)
     ));
@@ -1457,7 +1443,6 @@ window.addEventListener('load', async function() {
       }
     }
 
-    // Fetch note favorites so drawers show notes the user specifically hearted
     var _favoritedNotesByRecipeId = {};
     var { data: noteFavs } = await _supabase
       .from('note_favorites')
@@ -1473,9 +1458,6 @@ window.addEventListener('load', async function() {
       });
     }
 
-    // Also fetch notes the user wrote on any of these favorited recipes.
-    // These won't be in note_favorites (you don't heart your own notes) but should
-    // still appear in the drawer for the user's own favorited recipes.
     var favRecipeIds = recipes.map(function(r) { return r.id; });
     var { data: ownNotesOnFavs } = await _supabase
       .from('notes')
@@ -1486,14 +1468,12 @@ window.addEventListener('load', async function() {
     if (ownNotesOnFavs) {
       ownNotesOnFavs.forEach(function(note) {
         if (!_favoritedNotesByRecipeId[note.recipe_id]) _favoritedNotesByRecipeId[note.recipe_id] = [];
-        // Deduplicate by note ID — don't add if already in list from note_favorites
         var alreadyPresent = _favoritedNotesByRecipeId[note.recipe_id].some(function(n) { return n.id === note.id; });
         if (!alreadyPresent) _favoritedNotesByRecipeId[note.recipe_id].push(note);
       });
     }
 
     if (bulkActionsEl) bulkActionsEl.style.setProperty('display', 'flex', 'important');
-    // Re-hide empty state after async work — Wized may re-show it during the await
     if (emptyEl) emptyEl.style.setProperty('display', 'none', 'important');
 
     var PAGE_SIZE      = 20;
@@ -1564,17 +1544,13 @@ window.addEventListener('load', async function() {
 
     if (error || !noteFavs || noteFavs.length === 0) return;
 
-    // Group notes by recipe, skipping recipes the user already favorited
     var recipeMap = {};
     noteFavs.forEach(function(row) {
       if (!row.notes || !row.notes.recipes) return;
       var note   = row.notes;
       var recipe = note.recipes;
 
-      // Skip if user already favorited this recipe — covered by loadFavoriteRecipes
       if (window._favoritedRecipeIds && window._favoritedRecipeIds.has(recipe.id)) return;
-
-      // Skip if a card for this recipe already exists in the DOM
       if (document.querySelector('[data-favorite-recipe-id="' + recipe.id + '"]')) return;
 
       if (!recipeMap[recipe.id]) {
@@ -1585,7 +1561,6 @@ window.addEventListener('load', async function() {
 
     if (Object.keys(recipeMap).length === 0) return;
 
-    // Fetch creator usernames for all unique recipe owners
     var uniqueNoteOwnerIds = Array.from(new Set(
       Object.values(recipeMap).map(function(e) { return e.recipe.user_id; }).filter(Boolean)
     ));
@@ -1607,9 +1582,6 @@ window.addEventListener('load', async function() {
       if (wrapper) listEl.appendChild(wrapper);
     });
 
-    // Show bulk actions — they're hidden by default and loadFavoriteRecipes
-    // only shows them when recipe favorites exist. If the user only has note
-    // favorites, we need to show them here.
     var bulkActionsEl = document.querySelector('[wized="favorites-bulk-actions"]');
     if (bulkActionsEl) bulkActionsEl.style.setProperty('display', 'flex', 'important');
   }
@@ -1662,8 +1634,6 @@ window.addEventListener('load', async function() {
     await loadFavoriteNotes(session.user.id);
     console.log('done');
 
-    // Repeatedly enforce favorites-empty hidden state — Wized may re-show it
-    // after our async code finishes if its own query returns empty
     function hideFavEmptyIfHasCards() {
       var favListEl  = document.querySelector('[wized="favorites-list"]');
       var favEmptyEl = document.querySelector('[wized="favorites-empty"]');
