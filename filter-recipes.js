@@ -144,14 +144,27 @@ document.addEventListener('click', function(e) {
 
 // ============================================
 // GUARD: lock add-recipe card visuals when logged out.
-// Observes the entire .add-recipe_card subtree for any style changes.
-// When logged out, immediately reverts the wrapper, arrow, and helper text
-// to their closed state — catching anything Webflow's interaction changes
-// that our click handler return can't stop.
+// Observes the entire .add-recipe_card subtree for style changes. When logged
+// out, the accordion never truly opens, so it keeps the wrapper hidden, the
+// arrow unrotated, and — critically — forces helper2 to STAY visible. Webflow's
+// native interaction hides helper2 (its "open" state) on click; we immediately
+// revert it so the hint text never disappears.
 // ============================================
 window.addEventListener('load', function() {
   var addCard = document.querySelector('.add-recipe_card');
   if (!addCard) return;
+
+  // Find helper2 ("text-add-recipe_helper 2") and record its visible display.
+  // The accordion starts closed, so helper2 is visible at load — capture that value.
+  var helper2 = null;
+  addCard.querySelectorAll('.text-add-recipe_helper').forEach(function(h) {
+    if (h.classList.contains('2')) helper2 = h;
+  });
+  var helper2Display = 'block';
+  if (helper2) {
+    var d = getComputedStyle(helper2).display;
+    if (d && d !== 'none') helper2Display = d;
+  }
 
   var obs = new MutationObserver(function() {
     if (window._filterCardSession) return; // Logged in — our click handler drives state, don't interfere
@@ -164,6 +177,8 @@ window.addEventListener('load', function() {
 
     if (wrapper) wrapper.style.setProperty('display', 'none', 'important');
     if (arrow)   arrow.style.setProperty('transform', 'rotate(0deg)', 'important');
+    // Force helper2 to stay visible — logged-out users never open the accordion
+    if (helper2) helper2.style.setProperty('display', helper2Display, 'important');
 
     // Reconnect to keep watching
     obs.observe(addCard, { attributes: true, attributeFilter: ['style'], subtree: true });
