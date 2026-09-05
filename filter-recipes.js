@@ -45,44 +45,13 @@ document.addEventListener('click', function(e) {
   var trigger = e.target.closest('.accordion_closed');
   if (!trigger) return;
 
-  // If this accordion is inside the add-recipe card, take full JS control.
-  // We can't stop Webflow's native interaction from firing, but by handling
-  // everything ourselves with !important we win the style race for logged-in
-  // users. For logged-out users the MutationObserver below reverts anything
-  // Webflow manages to change.
+  // If this accordion is inside the add-recipe card, handle logged-in state here.
+  // (Logged-out clicks are already blocked in the capture-phase listener above,
+  // so this branch only ever runs for logged-in users.)
   var addRecipeCard = trigger.closest('.add-recipe_card');
   if (addRecipeCard) {
     if (!window._filterCardSession) {
-      // Logged out: show toast. MutationObserver enforces all visual state.
-      var existing = document.getElementById('fc-toast');
-      if (existing) existing.remove();
-      var toast = document.createElement('div');
-      toast.id = 'fc-toast';
-      toast.innerText = 'Log in or become a member to upload recipes.';
-      toast.style.cssText = [
-        'position:fixed',
-        'bottom:24px',
-        'left:50%',
-        'transform:translateX(-50%)',
-        'background:#2e2a26',
-        'color:#f9f5ef',
-        'padding:12px 20px',
-        'border-radius:8px',
-        'font-size:14px',
-        'z-index:99999',
-        'opacity:0',
-        'transition:opacity 0.3s ease',
-        'pointer-events:none',
-        'white-space:nowrap'
-      ].join(';');
-      document.body.appendChild(toast);
-      requestAnimationFrame(function() {
-        requestAnimationFrame(function() { toast.style.opacity = '1'; });
-      });
-      setTimeout(function() {
-        toast.style.opacity = '0';
-        setTimeout(function() { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 300);
-      }, 3000);
+      // Safety fallback only — capture handler normally prevents reaching here.
       return;
     }
 
@@ -141,6 +110,57 @@ document.addEventListener('click', function(e) {
     arrow.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
   }
 });
+
+// ============================================
+// CAPTURE-PHASE BLOCKER: stop Webflow's accordion interaction when logged out.
+// Webflow's IX2 handler is bound to the accordion element and fires in the
+// target phase — before any bubble-phase document listener. By intercepting in
+// the CAPTURE phase at the document level (which runs first, top-down), we can
+// stopImmediatePropagation so the event never reaches the element and Webflow's
+// interaction never runs at all. Nothing touches helper2, the arrow, or the
+// wrapper, so there is no flash. Only the toast is shown.
+// ============================================
+document.addEventListener('click', function(e) {
+  var trigger = e.target.closest('.accordion_closed');
+  if (!trigger) return;
+  var addRecipeCard = trigger.closest('.add-recipe_card');
+  if (!addRecipeCard) return;
+  if (window._filterCardSession) return; // Logged in — allow normal handling
+
+  // Logged out — block Webflow's interaction entirely and show the toast.
+  e.preventDefault();
+  e.stopImmediatePropagation();
+
+  var existing = document.getElementById('fc-toast');
+  if (existing) existing.remove();
+  var toast = document.createElement('div');
+  toast.id = 'fc-toast';
+  toast.innerText = 'Log in or become a member to upload recipes.';
+  toast.style.cssText = [
+    'position:fixed',
+    'bottom:24px',
+    'left:50%',
+    'transform:translateX(-50%)',
+    'background:#2e2a26',
+    'color:#f9f5ef',
+    'padding:12px 20px',
+    'border-radius:8px',
+    'font-size:14px',
+    'z-index:99999',
+    'opacity:0',
+    'transition:opacity 0.3s ease',
+    'pointer-events:none',
+    'white-space:nowrap'
+  ].join(';');
+  document.body.appendChild(toast);
+  requestAnimationFrame(function() {
+    requestAnimationFrame(function() { toast.style.opacity = '1'; });
+  });
+  setTimeout(function() {
+    toast.style.opacity = '0';
+    setTimeout(function() { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 300);
+  }, 3000);
+}, true); // capture phase
 
 // ============================================
 // GUARD: lock add-recipe card visuals when logged out.
