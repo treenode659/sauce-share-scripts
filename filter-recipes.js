@@ -336,17 +336,15 @@ document.addEventListener("DOMContentLoaded", function() {
   document.addEventListener('click', function(e) {
     if (e.target.closest('.add-recipe_expand-btn') || e.target.closest('.add-recipe_shrink-btn')) return;
     var cuisinePill  = e.target.closest(CUISINE_SELECTOR);
-    var pantryPill   = e.target.closest(PANTRY_SELECTOR);
     var flavorPill   = e.target.closest(FLAVOR_SELECTOR);
     var usagePill    = e.target.closest(USAGE_SELECTOR);
     var goesWithPill = e.target.closest(GOES_WITH_SELECTOR);
     var prepPill     = e.target.closest(PREP_SELECTOR);
     var basePill     = e.target.closest(BASE_SELECTOR);
-    if (!cuisinePill && !pantryPill && !flavorPill && !usagePill && !goesWithPill && !prepPill && !basePill) return;
+    if (!cuisinePill && !flavorPill && !usagePill && !goesWithPill && !prepPill && !basePill) return;
     e.preventDefault();
     e.stopImmediatePropagation();
     if (cuisinePill)       handleCuisineLogic(cuisinePill);
-    else if (pantryPill)   handleMultiSelect(pantryPill,   'selected_pantry',      8);
     else if (flavorPill)   handleMultiSelect(flavorPill,   'selected_flavors',     3);
     else if (usagePill)    handleMultiSelect(usagePill,    'selected_usage_types', 3);
     else if (goesWithPill) handleMultiSelect(goesWithPill, 'selected_goes_with',   3);
@@ -366,6 +364,37 @@ document.addEventListener("DOMContentLoaded", function() {
     syncToWized();
     window.syncAllUI();
   }, true);
+
+  // Pantry checkboxes are native inputs — use change event so toggles fire
+  // reliably regardless of whether the user clicks the box or the label text.
+  // The click handler can't reliably catch these because clicking the label
+  // hits a sibling element, not the checkbox itself.
+  document.addEventListener('change', function(e) {
+    var checkbox = e.target;
+    if (checkbox.getAttribute('data-wized') !== 'pantry_check') return;
+    var val = checkbox.getAttribute('data-value');
+    if (!val) return;
+
+    var current = window.pillState.selected_pantry.slice();
+    if (checkbox.checked) {
+      // Enforce max of 8 — uncheck and bail if already at limit
+      if (current.length >= 8) {
+        checkbox.checked = false;
+        var customCheck = checkbox.previousElementSibling;
+        if (customCheck && customCheck.classList.contains('w-checkbox-input')) {
+          customCheck.classList.remove('w--redirected-checked');
+        }
+        return;
+      }
+      if (!current.includes(val)) current.push(val);
+    } else {
+      current = current.filter(function(v) { return v !== val; });
+    }
+
+    window.pillState.selected_pantry = current;
+    syncToWized();
+    window.syncAllUI();
+  });
 
   function handleMultiSelect(pill, varName, limit) {
     var current = window.pillState[varName].slice();
@@ -465,6 +494,15 @@ document.addEventListener("DOMContentLoaded", function() {
     var hasBase     = !!window.pillState.base_pairing;
     var pantryCount = window.pillState.selected_pantry.length;
     var pantryValid = (pantryCount === 0) || (pantryCount >= 2 && pantryCount <= 8);
+
+    // Visual feedback on pantry checkboxes when count is 1 (too few selected)
+    var pantryContainer = document.querySelector('[data-wized="pantry_check"]');
+    if (pantryContainer) {
+      var pantryWrap = pantryContainer.closest('div') || pantryContainer.parentElement;
+      if (pantryWrap) {
+        pantryWrap.style.outline = (!pantryValid && pantryCount === 1) ? '2px solid #D77F42' : '';
+      }
+    }
     var isFormValid = allTextValid && pantryValid && hasCuisines && hasFlavors && hasUsage && hasPrep && hasBase;
     if (isFormValid) {
       btn.style.opacity       = "1";
