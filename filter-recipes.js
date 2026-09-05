@@ -980,7 +980,7 @@ window.addEventListener('load', function() {
           if (!canCreate) {
             submitBtn.style.display = 'none';
             var limitMessage = document.createElement('div');
-            limitMessage.textContent = 'You have reached your daily recipe limit. Please try again tomorrow.';
+            limitMessage.textContent = "You've reached your recipe limit. Stay tuned for more ways to share your sauces.";
             limitMessage.style.cssText = 'padding: 16px; text-align: center; color: #c00; font-weight: bold;';
             submitBtn.parentNode.insertBefore(limitMessage, submitBtn.nextSibling);
           }
