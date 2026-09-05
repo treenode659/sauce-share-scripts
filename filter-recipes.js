@@ -45,13 +45,15 @@ document.addEventListener('click', function(e) {
   var trigger = e.target.closest('.accordion_closed');
   if (!trigger) return;
 
-  // If this accordion is inside the add-recipe card, handle auth gate.
+  // If this accordion is inside the add-recipe card, take full JS control.
+  // We can't stop Webflow's native interaction from firing, but by handling
+  // everything ourselves with !important we win the style race for logged-in
+  // users. For logged-out users the MutationObserver below reverts anything
+  // Webflow manages to change.
   var addRecipeCard = trigger.closest('.add-recipe_card');
   if (addRecipeCard) {
     if (!window._filterCardSession) {
-      // User is logged out — show toast and keep details hidden.
-      // The MutationObserver below enforces display:none in case
-      // Webflow's native interaction fires after this handler.
+      // Logged out: show toast. MutationObserver enforces all visual state.
       var existing = document.getElementById('fc-toast');
       if (existing) existing.remove();
       var toast = document.createElement('div');
@@ -81,8 +83,38 @@ document.addEventListener('click', function(e) {
         toast.style.opacity = '0';
         setTimeout(function() { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 300);
       }, 3000);
+      return;
     }
-    // Always return — logged-in users use Webflow's native accordion on the add-recipe card.
+
+    // Logged in: manually drive the accordion so Webflow doesn't need to.
+    // Use !important so our values win even if Webflow's interaction also fires.
+    var detailsWrapper = addRecipeCard.querySelector('.add-recipe_section-details-wrapper');
+    var arrow          = addRecipeCard.querySelector('.arrow-accordion_wrap');
+    // "text-add-recipe_helper 2" has both the base class and combo class "2"
+    var helper2 = null;
+    addRecipeCard.querySelectorAll('.text-add-recipe_helper').forEach(function(h) {
+      if (h.classList.contains('2')) helper2 = h;
+    });
+
+    var isOpen = detailsWrapper && getComputedStyle(detailsWrapper).display !== 'none';
+
+    if (!isOpen) {
+      // Open
+      if (detailsWrapper) detailsWrapper.style.setProperty('display', 'flex', 'important');
+      if (arrow) {
+        arrow.style.transition = 'transform 0.3s ease';
+        arrow.style.setProperty('transform', 'rotate(180deg)', 'important');
+      }
+      if (helper2) helper2.style.setProperty('display', 'block', 'important');
+    } else {
+      // Close
+      if (detailsWrapper) detailsWrapper.style.setProperty('display', 'none', 'important');
+      if (arrow) {
+        arrow.style.transition = 'transform 0.3s ease';
+        arrow.style.setProperty('transform', 'rotate(0deg)', 'important');
+      }
+      if (helper2) helper2.style.setProperty('display', 'none', 'important');
+    }
     return;
   }
 
@@ -111,23 +143,39 @@ document.addEventListener('click', function(e) {
 });
 
 // ============================================
-// GUARD: keep add-recipe details closed when logged out
-// Webflow's native interaction may open add-recipe_section-details-wrapper
-// after our click handler returns. A MutationObserver watches the element's
-// style attribute and immediately forces display:none back whenever it changes
-// while no session is present.
+// GUARD: lock add-recipe card visuals when logged out.
+// Observes the entire .add-recipe_card subtree for any style changes.
+// When logged out, immediately reverts the wrapper, arrow, and helper text
+// to their closed state — catching anything Webflow's interaction changes
+// that our click handler return can't stop.
 // ============================================
 window.addEventListener('load', function() {
-  var wrapper = document.querySelector('.add-recipe_section-details-wrapper');
-  if (!wrapper) return;
+  var addCard = document.querySelector('.add-recipe_card');
+  if (!addCard) return;
 
   var obs = new MutationObserver(function() {
-    if (!window._filterCardSession) {
-      wrapper.style.setProperty('display', 'none', 'important');
-    }
+    if (window._filterCardSession) return; // Logged in — our click handler drives state, don't interfere
+
+    // Disconnect first to prevent infinite loop when we make our own style changes
+    obs.disconnect();
+
+    var wrapper = addCard.querySelector('.add-recipe_section-details-wrapper');
+    var arrow   = addCard.querySelector('.arrow-accordion_wrap');
+    // Only target "text-add-recipe_helper 2" (combo class) — not the base helper
+    var helper2 = null;
+    addCard.querySelectorAll('.text-add-recipe_helper').forEach(function(h) {
+      if (h.classList.contains('2')) helper2 = h;
+    });
+
+    if (wrapper) wrapper.style.setProperty('display', 'none', 'important');
+    if (arrow)   arrow.style.setProperty('transform', 'rotate(0deg)', 'important');
+    if (helper2) helper2.style.setProperty('display', 'none', 'important');
+
+    // Reconnect to keep watching
+    obs.observe(addCard, { attributes: true, attributeFilter: ['style'], subtree: true });
   });
 
-  obs.observe(wrapper, { attributes: true, attributeFilter: ['style'] });
+  obs.observe(addCard, { attributes: true, attributeFilter: ['style'], subtree: true });
 });
 
 // ============================================
@@ -1190,6 +1238,9 @@ window.addEventListener('load', function() {
     } catch(e) {
       _session = null;
     }
+    // Expose session globally on load so the accordion guard and click handler
+    // know the auth state immediately — not just after a filter-card radio is clicked.
+    window._filterCardSession = _session;
     hideAllFilterCardStates();
   }
 
