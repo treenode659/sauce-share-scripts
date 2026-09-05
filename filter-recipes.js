@@ -161,15 +161,9 @@ window.addEventListener('load', function() {
 
     var wrapper = addCard.querySelector('.add-recipe_section-details-wrapper');
     var arrow   = addCard.querySelector('.arrow-accordion_wrap');
-    // Only target "text-add-recipe_helper 2" (combo class) — not the base helper
-    var helper2 = null;
-    addCard.querySelectorAll('.text-add-recipe_helper').forEach(function(h) {
-      if (h.classList.contains('2')) helper2 = h;
-    });
 
     if (wrapper) wrapper.style.setProperty('display', 'none', 'important');
     if (arrow)   arrow.style.setProperty('transform', 'rotate(0deg)', 'important');
-    if (helper2) helper2.style.setProperty('display', 'none', 'important');
 
     // Reconnect to keep watching
     obs.observe(addCard, { attributes: true, attributeFilter: ['style'], subtree: true });
