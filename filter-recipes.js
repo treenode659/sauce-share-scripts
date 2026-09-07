@@ -259,7 +259,21 @@ document.addEventListener("DOMContentLoaded", function() {
       });
     }
     input.addEventListener("input", function() {
-      var len = input.value.length;
+      var raw = input.value;
+      var len;
+      var qlEditor = (input.closest('.form-field_control') || input.parentElement || document).querySelector('.ql-editor');
+
+      if (qlEditor) {
+        len = (qlEditor.textContent || qlEditor.innerText || '').trim().length;
+      } else if (isList) {
+        len = raw.split('\n')
+          .map(function(l) { return l.replace(/^[\u2022\-\*]\s*/, ''); })
+          .join('')
+          .length;
+      } else {
+        len = raw.trim().length;
+      }
+
       if (!counter) return;
       if (min > 0 && len < min && len > 0) {
         counter.innerText = 'Needs min ' + min + ' characters';
