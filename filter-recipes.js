@@ -482,27 +482,43 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   }
 
+  function getFieldLength(el, isList) {
+    var parent = el.closest('.form-field_control') || el.parentElement;
+    var qlEditor = parent ? parent.querySelector('.ql-editor') : null;
+    if (qlEditor) {
+      return (qlEditor.textContent || qlEditor.innerText || '').trim().length;
+    }
+    if (isList) {
+      return el.value.split('\n')
+        .map(function(l) { return l.replace(/^[\u2022\-\*]\s*/, ''); })
+        .join('').length;
+    }
+    return el.value.trim().length;
+  }
+
   function validateForm() {
     var btn = document.querySelector('[wized="submit_button"]');
     if (!btn) return;
     var allConstraintFields = ['recipe_title', 'ingredients', 'directions', 'servings', 'recipe_blurb', 'note_blurb', 'note_tried', 'sauce_story', 'note_details'];
     var requiredFields      = ['recipe_title', 'ingredients', 'directions', 'servings', 'recipe_blurb', 'note_blurb', 'note_tried'];
+    var listFields          = ['ingredients', 'directions'];
     var allTextValid    = true;
     var missingRequired = false;
     allConstraintFields.forEach(function(attrName) {
       var el = document.querySelector('[wized="' + attrName + '"], [data-wized="' + attrName + '"]');
       if (!el) return;
-      var val        = el.value.trim();
-      var min        = parseInt(el.getAttribute('minlength')) || 0;
-      var max        = parseInt(el.getAttribute('maxlength')) || Infinity;
+      var isList   = listFields.includes(attrName);
+      var len      = getFieldLength(el, isList);
+      var min      = parseInt(el.getAttribute('minlength')) || 0;
+      var max      = parseInt(el.getAttribute('maxlength')) || Infinity;
       var isRequired = requiredFields.includes(attrName);
-      var isEmpty    = val.length === 0;
-      var meetsMin   = val.length >= min;
-      var meetsMax   = val.length <= max;
-      if (isRequired && isEmpty)           { allTextValid = false; missingRequired = true; }
-      else if (!isEmpty && !meetsMin)      { allTextValid = false; el.style.borderBottom = "2px solid #D77F42"; }
-      else if (!isEmpty && !meetsMax)      { allTextValid = false; el.style.borderBottom = "2px solid #ff4d4d"; }
-      else                                 { el.style.borderBottom = ""; }
+      var isEmpty  = len === 0;
+      var meetsMin = len >= min;
+      var meetsMax = len <= max;
+      if (isRequired && isEmpty)      { allTextValid = false; missingRequired = true; }
+      else if (!isEmpty && !meetsMin) { allTextValid = false; el.style.borderBottom = "2px solid #D77F42"; }
+      else if (!isEmpty && !meetsMax) { allTextValid = false; el.style.borderBottom = "2px solid #ff4d4d"; }
+      else                            { el.style.borderBottom = ""; }
     });
     var hasCuisines = window.pillState.selected_cuisines.length    > 0;
     var hasFlavors  = window.pillState.selected_flavors.length     > 0;
