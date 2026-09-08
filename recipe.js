@@ -190,6 +190,39 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 window.addEventListener('load', function() {
+  // Convert any WebP icon URLs to SVG for icon_base, icon_flavor and icon_cuisine.
+  // icon_base is set by Wized's Function Editor; icon_flavor and icon_cuisine are
+  // set by Wized's Render List actions. All three use the same Supabase URL pattern
+  // so a simple .webp → .svg swap covers all of them.
+  var iconAttrs = ['icon_base', 'icon_flavor', 'icon_cuisine'];
+
+  function swapIconsToSvg() {
+    iconAttrs.forEach(function(attr) {
+      document.querySelectorAll('[wized="' + attr + '"]').forEach(function(img) {
+        if (img.src && img.src.includes('.webp')) {
+          img.src = img.src.replace('.webp', '.svg');
+          img.removeAttribute('srcset');
+        }
+      });
+    });
+  }
+
+  // Run immediately in case icons are already in the DOM
+  swapIconsToSvg();
+
+  // Also watch for Wized rendering list items after load
+  var iconObserver = new MutationObserver(function(mutations) {
+    var relevant = mutations.some(function(m) {
+      return Array.prototype.some.call(m.addedNodes, function(n) {
+        return n.nodeType === 1;
+      });
+    });
+    if (relevant) swapIconsToSvg();
+  });
+  iconObserver.observe(document.body, { childList: true, subtree: true });
+});
+
+window.addEventListener('load', function() {
   var checkData = setInterval(function() {
     if (window.Wized?.data?.r?.get_recipe?.data?.[0]) {
       clearInterval(checkData);
