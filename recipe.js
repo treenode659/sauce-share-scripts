@@ -360,9 +360,6 @@ window.addEventListener('load', function () {
         authorAvatarImg.removeAttribute('srcset');
         authorAvatarImg.removeAttribute('sizes');
         authorAvatarImg.src = avatarUrl;
-        var isCreator = recipe.author_role === 'Creator';
-        authorAvatarImg.style.width      = '2rem';
-        authorAvatarImg.style.height     = isCreator ? '2rem' : '2.5rem';
         authorAvatarImg.style.objectFit  = recipe.profiles.avatar_selection === 'chef-hat' ? 'contain' : 'cover';
         if (recipe.profiles.avatar_selection === 'chef-hat') {
           authorAvatarImg.style.objectPosition = 'center center';
