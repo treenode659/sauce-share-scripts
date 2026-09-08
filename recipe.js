@@ -195,6 +195,19 @@ window.addEventListener('load', function() {
   // specifically on icon elements so we catch it even when Wized sets src late.
   var iconAttrs = ['icon_base', 'icon_flavor', 'icon_cuisine'];
 
+  // Inject a style tag as a guaranteed fallback — this wins over Webflow
+  // regardless of JS timing since it's in the document from load.
+  var iconStyle = document.createElement('style');
+  iconStyle.textContent = [
+    '[wized="icon_base"], [wized="icon_flavor"], [wized="icon_cuisine"] {',
+    '  width: 32px !important;',
+    '  height: 32px !important;',
+    '  object-fit: contain !important;',
+    '  flex-shrink: 0 !important;',
+    '}'
+  ].join('\n');
+  document.head.appendChild(iconStyle);
+
   function applyIconSize(img) {
     img.style.setProperty('width',       '32px',    'important');
     img.style.setProperty('height',      '32px',    'important');
