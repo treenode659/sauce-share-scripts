@@ -195,19 +195,19 @@ window.addEventListener('load', function() {
   // specifically on icon elements so we catch it even when Wized sets src late.
   var iconAttrs = ['icon_base', 'icon_flavor', 'icon_cuisine'];
 
+  function applyIconSize(img) {
+    img.style.setProperty('width',       '32px',    'important');
+    img.style.setProperty('height',      '32px',    'important');
+    img.style.setProperty('object-fit',  'contain', 'important');
+    img.style.setProperty('flex-shrink', '0',       'important');
+  }
+
   function swapIfWebp(img) {
     if (img.src && img.src.includes('.webp') && img.src.includes('icon-images')) {
       img.src = img.src.replace('.webp', '.svg');
       img.removeAttribute('srcset');
     }
-    // Ensure icon elements are correctly sized regardless of SVG natural dimensions
-    var attr = img.getAttribute('wized');
-    if (attr === 'icon_base' || attr === 'icon_flavor' || attr === 'icon_cuisine') {
-      img.style.setProperty('width',      '1.5rem', 'important');
-      img.style.setProperty('height',     '1.5rem', 'important');
-      img.style.setProperty('object-fit', 'contain', 'important');
-      img.style.setProperty('flex-shrink','0',       'important');
-    }
+    applyIconSize(img);
   }
 
   function swapIconsToSvg() {
@@ -219,13 +219,12 @@ window.addEventListener('load', function() {
   function watchIconElement(img) {
     if (img._svgWatching) return;
     img._svgWatching = true;
-    // Watch for src attribute changes — fires whenever Wized updates the icon
     var attrObs = new MutationObserver(function() {
       swapIfWebp(img);
     });
     attrObs.observe(img, { attributes: true, attributeFilter: ['src'] });
-    // Also swap immediately in case src is already set
     swapIfWebp(img);
+    applyIconSize(img);
   }
 
   function wireAllIcons() {
