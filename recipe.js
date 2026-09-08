@@ -200,6 +200,14 @@ window.addEventListener('load', function() {
       img.src = img.src.replace('.webp', '.svg');
       img.removeAttribute('srcset');
     }
+    // Ensure icon elements are correctly sized regardless of SVG natural dimensions
+    var attr = img.getAttribute('wized');
+    if (attr === 'icon_base' || attr === 'icon_flavor' || attr === 'icon_cuisine') {
+      img.style.width       = '1.5rem';
+      img.style.height      = '1.5rem';
+      img.style.objectFit   = 'contain';
+      img.style.flexShrink  = '0';
+    }
   }
 
   function swapIconsToSvg() {
