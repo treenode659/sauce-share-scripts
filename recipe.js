@@ -357,15 +357,14 @@ window.addEventListener('load', function () {
     if (authorAvatarImg && recipe.profiles?.avatar_selection) {
       var avatarUrl = avatarMap[recipe.profiles.avatar_selection];
       if (avatarUrl) {
+        var isCreator = recipe.author_role === 'Creator';
         authorAvatarImg.removeAttribute('srcset');
         authorAvatarImg.removeAttribute('sizes');
-        authorAvatarImg.src = avatarUrl;
-        authorAvatarImg.style.objectFit  = recipe.profiles.avatar_selection === 'chef-hat' ? 'contain' : 'cover';
-        if (recipe.profiles.avatar_selection === 'chef-hat') {
-          authorAvatarImg.style.objectPosition = 'center center';
-        } else {
-          authorAvatarImg.style.objectPosition = '';
-        }
+        authorAvatarImg.src              = avatarUrl;
+        authorAvatarImg.style.objectFit  = 'contain';
+        authorAvatarImg.style.objectPosition = 'center center';
+        authorAvatarImg.style.width      = isCreator ? '1.5rem' : '2rem';
+        authorAvatarImg.style.height     = isCreator ? '1.5rem' : '2rem';
       }
     }
 
