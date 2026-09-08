@@ -307,7 +307,11 @@ window.addEventListener('load', async function() {
             profile.avatar_selection = _selectedAvatar;
             if (window._sauceProfile) window._sauceProfile.avatar_selection = _selectedAvatar;
             var url = avatarMap[_selectedAvatar];
-            if (avatarEl && url) { avatarEl.src = url; avatarEl.alt = _selectedAvatar; }
+            if (avatarEl && url) {
+                avatarEl.src = url;
+                avatarEl.alt = _selectedAvatar;
+                avatarEl.style.objectFit = _selectedAvatar === 'chef-hat' ? 'contain' : 'cover';
+              }
             hideAvatarModal();
           }
         } catch(err) {
@@ -1609,7 +1613,11 @@ window.addEventListener('load', async function() {
     if (tierEl) tierEl.textContent = profile.subscription_tier === 'plus' ? 'Plus' : 'Free';
     if (avatarEl && profile.avatar_selection) {
       var url = avatarMap[profile.avatar_selection];
-      if (url) { avatarEl.src = url; avatarEl.alt = profile.avatar_selection; }
+      if (url) {
+        avatarEl.src = url;
+        avatarEl.alt = profile.avatar_selection;
+        avatarEl.style.objectFit = profile.avatar_selection === 'chef-hat' ? 'contain' : 'cover';
+      }
     }
     var mEl = document.querySelector('[wized="profile-member-since"]');
     if (mEl) mEl.textContent = formatDate(profile.created_at);
