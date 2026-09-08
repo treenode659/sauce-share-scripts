@@ -59,17 +59,17 @@ window.addEventListener('load', async function() {
   }
 
   var avatarMap = {
-    'chef-hat':     'https://houohobadselkswaxwsy.supabase.co/storage/v1/object/public/icon-images/chef-hat.webp',
-    'chef-woman-1': 'https://cdn.prod.website-files.com/6895190987f813f35747a739/6a28732a6c67ccab18efbe8c_woman-1-avatar-compressed.webp',
-    'chef-woman-2': 'https://cdn.prod.website-files.com/6895190987f813f35747a739/6a287477e44bac50e643bc8d_woman-2-avatar-compressed.webp',
-    'chef-woman-3': 'https://cdn.prod.website-files.com/6895190987f813f35747a739/6a2874b9ec475595038bea7a_woman-3-avatar-compressed.webp',
-    'chef-woman-4': 'https://cdn.prod.website-files.com/6895190987f813f35747a739/6a2875a0178b355c59a74cd5_woman-4-avatar-compressed.webp',
-    'chef-woman-5': 'https://cdn.prod.website-files.com/6895190987f813f35747a739/6a2875fc1ceb1ed82b458bb5_woman-5-avatar-compressed.webp',
-    'chef-man-1':   'https://cdn.prod.website-files.com/6895190987f813f35747a739/6a287638af703fa5f61fc56e_man-1-avatar-compressed.webp',
-    'chef-man-2':   'https://cdn.prod.website-files.com/6895190987f813f35747a739/6a2876e47a486e07833e56bd_man-2-avatar-compressed.webp',
-    'chef-man-3':   'https://cdn.prod.website-files.com/6895190987f813f35747a739/6a28786a835d8710f8548f5a_man-3-avatar-compressed.webp',
-    'chef-man-4':   'https://cdn.prod.website-files.com/6895190987f813f35747a739/6a28789eb76a3546ed5017c0_man-4-avatar-compressed.webp',
-    'chef-man-5':   'https://cdn.prod.website-files.com/6895190987f813f35747a739/6a2878eb65f7a9a67edb88c2_man-5-avatar-compressed.webp'
+    'chef-hat':     'https://houohobadselkswaxwsy.supabase.co/storage/v1/object/public/icon-images/chef-hat.svg',
+    'chef-woman-1': 'https://houohobadselkswaxwsy.supabase.co/storage/v1/object/public/icon-images/woman-1.svg',
+    'chef-woman-2': 'https://houohobadselkswaxwsy.supabase.co/storage/v1/object/public/icon-images/woman-2.svg',
+    'chef-woman-3': 'https://houohobadselkswaxwsy.supabase.co/storage/v1/object/public/icon-images/woman-3.svg',
+    'chef-woman-4': 'https://houohobadselkswaxwsy.supabase.co/storage/v1/object/public/icon-images/woman-4.svg',
+    'chef-woman-5': 'https://houohobadselkswaxwsy.supabase.co/storage/v1/object/public/icon-images/woman-5.svg',
+    'chef-man-1':   'https://houohobadselkswaxwsy.supabase.co/storage/v1/object/public/icon-images/man-1.svg',
+    'chef-man-2':   'https://houohobadselkswaxwsy.supabase.co/storage/v1/object/public/icon-images/man-2.svg',
+    'chef-man-3':   'https://houohobadselkswaxwsy.supabase.co/storage/v1/object/public/icon-images/man-3.svg',
+    'chef-man-4':   'https://houohobadselkswaxwsy.supabase.co/storage/v1/object/public/icon-images/man-4.svg',
+    'chef-man-5':   'https://houohobadselkswaxwsy.supabase.co/storage/v1/object/public/icon-images/man-5.svg'
   };
 
   var selectableAvatars = [
