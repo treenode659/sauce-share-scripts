@@ -310,7 +310,13 @@ window.addEventListener('load', async function() {
             if (avatarEl && url) {
                 avatarEl.src = url;
                 avatarEl.alt = _selectedAvatar;
-                avatarEl.style.objectFit = _selectedAvatar === 'chef-hat' ? 'contain' : 'cover';
+                if (_selectedAvatar === 'chef-hat') {
+                  avatarEl.style.objectFit      = 'contain';
+                  avatarEl.style.objectPosition = 'center center';
+                } else {
+                  avatarEl.style.objectFit      = 'cover';
+                  avatarEl.style.objectPosition = '';
+                }
               }
             hideAvatarModal();
           }
@@ -1616,7 +1622,13 @@ window.addEventListener('load', async function() {
       if (url) {
         avatarEl.src = url;
         avatarEl.alt = profile.avatar_selection;
-        avatarEl.style.objectFit = profile.avatar_selection === 'chef-hat' ? 'contain' : 'cover';
+        if (profile.avatar_selection === 'chef-hat') {
+          avatarEl.style.objectFit      = 'contain';
+          avatarEl.style.objectPosition = 'center center';
+        } else {
+          avatarEl.style.objectFit      = 'cover';
+          avatarEl.style.objectPosition = '';
+        }
       }
     }
     var mEl = document.querySelector('[wized="profile-member-since"]');
