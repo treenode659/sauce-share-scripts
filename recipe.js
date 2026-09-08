@@ -203,10 +203,10 @@ window.addEventListener('load', function() {
     // Ensure icon elements are correctly sized regardless of SVG natural dimensions
     var attr = img.getAttribute('wized');
     if (attr === 'icon_base' || attr === 'icon_flavor' || attr === 'icon_cuisine') {
-      img.style.width       = '1.5rem';
-      img.style.height      = '1.5rem';
-      img.style.objectFit   = 'contain';
-      img.style.flexShrink  = '0';
+      img.style.setProperty('width',      '1.5rem', 'important');
+      img.style.setProperty('height',     '1.5rem', 'important');
+      img.style.setProperty('object-fit', 'contain', 'important');
+      img.style.setProperty('flex-shrink','0',       'important');
     }
   }
 
