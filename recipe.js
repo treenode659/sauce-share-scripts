@@ -200,19 +200,13 @@ window.addEventListener('load', function() {
   var iconStyle = document.createElement('style');
   iconStyle.textContent = [
     '[wized="icon_base"], [wized="icon_flavor"], [wized="icon_cuisine"] {',
-    '  width: 32px !important;',
-    '  height: 32px !important;',
     '  object-fit: contain !important;',
-    '  flex-shrink: 0 !important;',
     '}'
   ].join('\n');
   document.head.appendChild(iconStyle);
 
   function applyIconSize(img) {
-    img.style.setProperty('width',       '32px',    'important');
-    img.style.setProperty('height',      '32px',    'important');
-    img.style.setProperty('object-fit',  'contain', 'important');
-    img.style.setProperty('flex-shrink', '0',       'important');
+    img.style.setProperty('object-fit', 'contain', 'important');
   }
 
   function swapIfWebp(img) {
@@ -237,7 +231,6 @@ window.addEventListener('load', function() {
     });
     attrObs.observe(img, { attributes: true, attributeFilter: ['src'] });
     swapIfWebp(img);
-    applyIconSize(img);
   }
 
   function wireAllIcons() {
