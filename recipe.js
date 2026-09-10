@@ -1239,6 +1239,19 @@ window.addEventListener('load', function () {
     var pinnedInner = card.querySelector('.note-card_inner');
     if (pinnedInner) pinnedInner.style.setProperty('row-gap', pinnedGap, 'important');
 
+
+    var pinnedAvatarImg = card.querySelector(".note-author_avatar img") ||
+                          card.querySelector(".note-author_avatar-image");
+    if (pinnedAvatarImg && recipe.profiles?.avatar_selection) {
+      var pinnedAvatarUrl = avatarMap[recipe.profiles.avatar_selection];
+      if (pinnedAvatarUrl) {
+        pinnedAvatarImg.removeAttribute("srcset");
+        pinnedAvatarImg.removeAttribute("sizes");
+        pinnedAvatarImg.src = pinnedAvatarUrl;
+        applyAvatarStyle(pinnedAvatarImg, recipe.profiles.avatar_selection);
+      }
+    }
+
     var usernameEl = card.querySelector('[wized="note-username"]');
     if (usernameEl && recipe.profiles?.username) {
       usernameEl.textContent  = '@' + recipe.profiles.username;
