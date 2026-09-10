@@ -98,10 +98,6 @@ document.addEventListener('DOMContentLoaded', function () {
     var readLess = block.querySelector('.text-read-less');
     if (!textEl || !readMore || !readLess) return;
 
-    // Already processed — do NOT re-apply styles or re-measure. Re-running the
-    // clamp + checkOverflow reads on every observer fire forces a layout reflow
-    // and is what makes the page jitter while typing in the note form (setting
-    // the counter's textContent triggers this body-level observer every keystroke).
     if (block.dataset.readMoreInit === 'true') return;
 
     if (!block.dataset.readMoreInit) {
@@ -173,9 +169,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
   scanForBlocks();
   var observer = new MutationObserver(function (mutations) {
-    // Only react when a meal-content block is actually added to the DOM.
-    // Ignore unrelated mutations (e.g. the note-form counter updating its text
-    // on every keystroke), which would otherwise trigger a full re-scan/reflow.
     var relevant = mutations.some(function (m) {
       return Array.prototype.some.call(m.addedNodes, function (n) {
         return n.nodeType === 1 && (
@@ -190,13 +183,8 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 window.addEventListener('load', function() {
-  // Convert any WebP icon URLs to SVG for icon_base, icon_flavor and icon_cuisine.
-  // Wized sets the src attribute after rendering — we watch for attribute changes
-  // specifically on icon elements so we catch it even when Wized sets src late.
   var iconAttrs = ['icon_base', 'icon_flavor', 'icon_cuisine'];
 
-  // Inject a style tag as a guaranteed fallback — this wins over Webflow
-  // regardless of JS timing since it's in the document from load.
   var iconStyle = document.createElement('style');
   iconStyle.textContent = [
     '[wized="icon_base"], [wized="icon_flavor"], [wized="icon_cuisine"] {',
@@ -239,13 +227,11 @@ window.addEventListener('load', function() {
     });
   }
 
-  // Run immediately and on delays
   wireAllIcons();
   setTimeout(wireAllIcons, 300);
   setTimeout(wireAllIcons, 800);
   setTimeout(wireAllIcons, 1500);
 
-  // Also watch for new icon elements added to the DOM by Wized list rendering
   var domObs = new MutationObserver(function(mutations) {
     var relevant = mutations.some(function(m) {
       return Array.prototype.some.call(m.addedNodes, function(n) {
@@ -336,6 +322,18 @@ window.addEventListener('load', function () {
     'chef-man-4':   'https://houohobadselkswaxwsy.supabase.co/storage/v1/object/public/icon-images/man-4.svg?v=2',
     'chef-man-5':   'https://houohobadselkswaxwsy.supabase.co/storage/v1/object/public/icon-images/man-5.svg?v=2'
   };
+
+  function applyAvatarStyle(imgEl, avatarSelection) {
+    if (avatarSelection === 'chef-hat') {
+      imgEl.style.objectFit      = 'contain';
+      imgEl.style.objectPosition = 'center center';
+      imgEl.style.padding        = '2px';
+    } else {
+      imgEl.style.objectFit      = 'cover';
+      imgEl.style.objectPosition = 'center center';
+      imgEl.style.padding        = '';
+    }
+  }
 
   var _session      = null;
   var _selectedFile = null;
@@ -428,11 +426,10 @@ window.addEventListener('load', function () {
         var isCreator = recipe.author_role === 'Creator';
         authorAvatarImg.removeAttribute('srcset');
         authorAvatarImg.removeAttribute('sizes');
-        authorAvatarImg.src              = avatarUrl;
-        authorAvatarImg.style.objectFit  = 'contain';
-        authorAvatarImg.style.objectPosition = 'center center';
-        authorAvatarImg.style.width      = isCreator ? '1.5rem' : '2rem';
-        authorAvatarImg.style.height     = isCreator ? '1.5rem' : '2rem';
+        authorAvatarImg.src    = avatarUrl;
+        authorAvatarImg.style.width  = isCreator ? '1.5rem' : '2rem';
+        authorAvatarImg.style.height = isCreator ? '1.5rem' : '2rem';
+        applyAvatarStyle(authorAvatarImg, recipe.profiles.avatar_selection);
       }
     }
 
@@ -566,6 +563,7 @@ window.addEventListener('load', function () {
               avatarImg.removeAttribute('srcset');
               avatarImg.removeAttribute('sizes');
               avatarImg.src = url;
+              applyAvatarStyle(avatarImg, res.data.avatar_selection);
             }
           }
         });
@@ -869,10 +867,8 @@ window.addEventListener('load', function () {
       var card = buildNoteCard(note);
       if (anchor && anchor.parentElement === list) list.insertBefore(card, anchor);
       else list.appendChild(card);
-      // Set gap after insertion so the inline style takes effect in the live DOM
       var memberGap = window.innerWidth <= 767 ? '1.5rem' : '2rem';
       card.style.setProperty('row-gap', memberGap, 'important');
-      // Add breathing room above note-engagement on all breakpoints
       var engEl = card.querySelector('.note-engagement');
       if (engEl) engEl.style.setProperty('margin-top', '1rem', 'important');
     });
@@ -936,6 +932,7 @@ window.addEventListener('load', function () {
         avatarImg.removeAttribute('srcset');
         avatarImg.removeAttribute('sizes');
         avatarImg.src = url;
+        applyAvatarStyle(avatarImg, note.profiles.avatar_selection);
       }
     }
 
@@ -1243,7 +1240,6 @@ window.addEventListener('load', function () {
     var card = document.querySelector('[wized="recipe-pinned-note-card"]');
     if (!card) return;
 
-    // Set gap after the card is already in the live DOM so the override wins
     var pinnedGap = window.innerWidth <= 767 ? '2rem' : '2.5rem';
     card.style.setProperty('row-gap', pinnedGap, 'important');
     var pinnedInner = card.querySelector('.note-card_inner');
@@ -1294,8 +1290,6 @@ window.addEventListener('load', function () {
   }
 
   var observer = new MutationObserver(function(mutations) {
-    // Skip mutations that add no elements (e.g. the note-form counter changing
-    // its text every keystroke) so we don't re-query the whole document.
     var addedEl = mutations.some(function(m) {
       return Array.prototype.some.call(m.addedNodes, function(n) { return n.nodeType === 1; });
     });
@@ -1560,8 +1554,6 @@ window.addEventListener('load', function() {
   }
 
   var shareObserver = new MutationObserver(function(mutations) {
-    // Skip mutations that add no elements (e.g. the note-form counter changing
-    // its text every keystroke) so we don't re-query the whole document.
     var addedEl = mutations.some(function(m) {
       return Array.prototype.some.call(m.addedNodes, function(n) { return n.nodeType === 1; });
     });
