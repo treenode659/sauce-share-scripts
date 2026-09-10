@@ -324,15 +324,9 @@ window.addEventListener('load', function () {
   };
 
   function applyAvatarStyle(imgEl, avatarSelection) {
-    if (avatarSelection === 'chef-hat') {
-      imgEl.style.objectFit      = 'contain';
-      imgEl.style.objectPosition = 'center center';
-      imgEl.style.padding        = '2px';
-    } else {
-      imgEl.style.objectFit      = 'cover';
-      imgEl.style.objectPosition = 'center center';
-      imgEl.style.padding        = '';
-    }
+    imgEl.style.objectFit      = 'contain';
+    imgEl.style.objectPosition = 'center center';
+    imgEl.style.padding        = avatarSelection === 'chef-hat' ? '2px' : '0px';
   }
 
   var _session      = null;
