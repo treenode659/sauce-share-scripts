@@ -420,10 +420,12 @@ window.addEventListener('load', function () {
         var isCreator = recipe.author_role === 'Creator';
         authorAvatarImg.removeAttribute('srcset');
         authorAvatarImg.removeAttribute('sizes');
-        authorAvatarImg.src    = avatarUrl;
-        authorAvatarImg.style.width  = isCreator ? '1.5rem' : '2rem';
-        authorAvatarImg.style.height = isCreator ? '1.5rem' : '2rem';
-        applyAvatarStyle(authorAvatarImg, recipe.profiles.avatar_selection);
+        authorAvatarImg.src                  = avatarUrl;
+        authorAvatarImg.style.width          = isCreator ? '1.5rem' : '2rem';
+        authorAvatarImg.style.height         = isCreator ? '1.5rem' : '2rem';
+        authorAvatarImg.style.objectFit      = 'contain';
+        authorAvatarImg.style.objectPosition = 'center center';
+        authorAvatarImg.style.padding        = '';
       }
     }
 
