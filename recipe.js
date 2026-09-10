@@ -182,6 +182,26 @@ document.addEventListener('DOMContentLoaded', function () {
   observer.observe(document.body, { childList: true, subtree: true });
 });
 
+var avatarMap = {
+  'chef-hat':     'https://houohobadselkswaxwsy.supabase.co/storage/v1/object/public/icon-images/chef-hat.svg?v=2',
+  'chef-woman-1': 'https://houohobadselkswaxwsy.supabase.co/storage/v1/object/public/icon-images/woman-1.svg?v=2',
+  'chef-woman-2': 'https://houohobadselkswaxwsy.supabase.co/storage/v1/object/public/icon-images/woman-2.svg?v=2',
+  'chef-woman-3': 'https://houohobadselkswaxwsy.supabase.co/storage/v1/object/public/icon-images/woman-3.svg?v=2',
+  'chef-woman-4': 'https://houohobadselkswaxwsy.supabase.co/storage/v1/object/public/icon-images/woman-4.svg?v=2',
+  'chef-woman-5': 'https://houohobadselkswaxwsy.supabase.co/storage/v1/object/public/icon-images/woman-5.svg?v=2',
+  'chef-man-1':   'https://houohobadselkswaxwsy.supabase.co/storage/v1/object/public/icon-images/man-1.svg?v=2',
+  'chef-man-2':   'https://houohobadselkswaxwsy.supabase.co/storage/v1/object/public/icon-images/man-2.svg?v=2',
+  'chef-man-3':   'https://houohobadselkswaxwsy.supabase.co/storage/v1/object/public/icon-images/man-3.svg?v=2',
+  'chef-man-4':   'https://houohobadselkswaxwsy.supabase.co/storage/v1/object/public/icon-images/man-4.svg?v=2',
+  'chef-man-5':   'https://houohobadselkswaxwsy.supabase.co/storage/v1/object/public/icon-images/man-5.svg?v=2'
+};
+
+function applyAvatarStyle(imgEl, avatarSelection) {
+  imgEl.style.objectFit      = 'contain';
+  imgEl.style.objectPosition = 'center center';
+  imgEl.style.padding        = avatarSelection === 'chef-hat' ? '6px' : '0px';
+}
+
 window.addEventListener('load', function() {
   var iconAttrs = ['icon_base', 'icon_flavor', 'icon_cuisine'];
 
@@ -308,26 +328,6 @@ window.addEventListener('load', function () {
     auth:   { persistSession: false }
   });
   window._recipeSupabase = _supabase;
-
-  var avatarMap = {
-    'chef-hat':     'https://houohobadselkswaxwsy.supabase.co/storage/v1/object/public/icon-images/chef-hat.svg?v=2',
-    'chef-woman-1': 'https://houohobadselkswaxwsy.supabase.co/storage/v1/object/public/icon-images/woman-1.svg?v=2',
-    'chef-woman-2': 'https://houohobadselkswaxwsy.supabase.co/storage/v1/object/public/icon-images/woman-2.svg?v=2',
-    'chef-woman-3': 'https://houohobadselkswaxwsy.supabase.co/storage/v1/object/public/icon-images/woman-3.svg?v=2',
-    'chef-woman-4': 'https://houohobadselkswaxwsy.supabase.co/storage/v1/object/public/icon-images/woman-4.svg?v=2',
-    'chef-woman-5': 'https://houohobadselkswaxwsy.supabase.co/storage/v1/object/public/icon-images/woman-5.svg?v=2',
-    'chef-man-1':   'https://houohobadselkswaxwsy.supabase.co/storage/v1/object/public/icon-images/man-1.svg?v=2',
-    'chef-man-2':   'https://houohobadselkswaxwsy.supabase.co/storage/v1/object/public/icon-images/man-2.svg?v=2',
-    'chef-man-3':   'https://houohobadselkswaxwsy.supabase.co/storage/v1/object/public/icon-images/man-3.svg?v=2',
-    'chef-man-4':   'https://houohobadselkswaxwsy.supabase.co/storage/v1/object/public/icon-images/man-4.svg?v=2',
-    'chef-man-5':   'https://houohobadselkswaxwsy.supabase.co/storage/v1/object/public/icon-images/man-5.svg?v=2'
-  };
-
-  function applyAvatarStyle(imgEl, avatarSelection) {
-    imgEl.style.objectFit      = 'contain';
-    imgEl.style.objectPosition = 'center center';
-    imgEl.style.padding        = avatarSelection === 'chef-hat' ? '6px' : '0px';
-  }
 
   var _session      = null;
   var _selectedFile = null;
