@@ -326,7 +326,7 @@ window.addEventListener('load', function () {
   function applyAvatarStyle(imgEl, avatarSelection) {
     imgEl.style.objectFit      = 'contain';
     imgEl.style.objectPosition = 'center center';
-    imgEl.style.padding        = avatarSelection === 'chef-hat' ? '4px' : '0px';
+    imgEl.style.padding        = avatarSelection === 'chef-hat' ? '6px' : '0px';
   }
 
   var _session      = null;
