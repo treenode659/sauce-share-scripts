@@ -761,6 +761,11 @@ window.addEventListener('load', function () {
     if (radioOldest) radioOldest.checked = false;
     if (radioMine)   radioMine.checked   = false;
 
+    var radioMineWrapper = radioMine ? radioMine.closest('.member-notes_sort-option') : null;
+    if (radioMineWrapper) {
+      radioMineWrapper.style.setProperty('display', _session ? 'flex' : 'none', 'important');
+    }
+
     if (trigger) {
       trigger.style.cursor = 'pointer';
       trigger.addEventListener('click', function(e) {
