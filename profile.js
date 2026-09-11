@@ -11,6 +11,32 @@ window.addEventListener('load', async function() {
   var modalEl       = document.querySelector('[wized="welcome-modal"]');
   var avatarModalEl = document.querySelector('[wized="avatar-modal"]');
 
+  // ── Progress bar ────────────────────────────────────────────────────────────
+  function startProgressBar() {
+    var bar = document.querySelector('[wized="progress-bar-fill"]');
+    if (!bar) return null;
+    bar.style.transition = 'none';
+    bar.style.opacity    = '1';
+    bar.style.width      = '0%';
+    setTimeout(function() {
+      bar.style.transition = 'width 0.4s ease';
+      bar.style.width      = '20%';
+    }, 50);
+    setTimeout(function() { bar.style.width = '50%'; }, 300);
+    setTimeout(function() { bar.style.width = '80%'; }, 700);
+    return bar;
+  }
+
+  function finishProgressBar(bar) {
+    if (!bar) return;
+    bar.style.transition = 'width 0.3s ease';
+    bar.style.width      = '100%';
+    setTimeout(function() {
+      bar.style.transition = 'opacity 0.4s ease';
+      bar.style.opacity    = '0';
+    }, 350);
+  }
+
   function hideModal() {
     if (!modalEl) return;
     modalEl.style.setProperty('display', 'none', 'important');
@@ -44,6 +70,8 @@ window.addEventListener('load', async function() {
   hideModal();
   hideAvatarModal();
 
+  var _progressBar = startProgressBar();
+
   function hideLoading() { if (loadingEl) loadingEl.style.setProperty('display', 'none', 'important'); }
   function showContent() { if (contentEl) contentEl.style.setProperty('display', 'block', 'important'); }
   function showError(msg) {
@@ -54,6 +82,7 @@ window.addEventListener('load', async function() {
   async function finishLoading() {
     var elapsed = Date.now() - loadStart;
     if (elapsed < 300) await new Promise(r => setTimeout(r, 300 - elapsed));
+    finishProgressBar(_progressBar);
     hideLoading();
     showContent();
   }
@@ -308,16 +337,16 @@ window.addEventListener('load', async function() {
             if (window._sauceProfile) window._sauceProfile.avatar_selection = _selectedAvatar;
             var url = avatarMap[_selectedAvatar];
             if (avatarEl && url) {
-                avatarEl.src = url;
-                avatarEl.alt = _selectedAvatar;
-                if (_selectedAvatar === 'chef-hat') {
-                  avatarEl.style.objectFit      = 'contain';
-                  avatarEl.style.objectPosition = 'center center';
-                } else {
-                  avatarEl.style.objectFit      = 'cover';
-                  avatarEl.style.objectPosition = '';
-                }
+              avatarEl.src = url;
+              avatarEl.alt = _selectedAvatar;
+              if (_selectedAvatar === 'chef-hat') {
+                avatarEl.style.objectFit      = 'contain';
+                avatarEl.style.objectPosition = 'center center';
+              } else {
+                avatarEl.style.objectFit      = 'cover';
+                avatarEl.style.objectPosition = '';
               }
+            }
             hideAvatarModal();
           }
         } catch(err) {
@@ -452,8 +481,6 @@ window.addEventListener('load', async function() {
       });
     });
   }
-
-  // ── Shared note population functions ──────────────────────────────────────
 
   function populatePinnedNote(drawer, recipe, userId) {
     var pinnedTemplate = drawer.querySelector('[wized="recipe-pinned-note-template"]');
@@ -754,8 +781,6 @@ window.addEventListener('load', async function() {
     });
   }
 
-  // ── Shared row renderer ────────────────────────────────────────────────────
-
   function renderRows(list, templateAttr, textAttr, items) {
     if (!list || !items || !items.length) return;
     var rowTemplate = list.querySelector('[wized="' + templateAttr + '"]');
@@ -771,8 +796,6 @@ window.addEventListener('load', async function() {
       list.appendChild(row);
     });
   }
-
-  // ── Shared favorite card builder ───────────────────────────────────────────
 
   function buildFavoriteCard(recipe, userId, favoritedNotes) {
     var templateEl       = document.querySelector('[wized="favorites-card-template"]');
@@ -920,8 +943,6 @@ window.addEventListener('load', async function() {
 
     return wrapper;
   }
-
-  // ── Bulk actions ───────────────────────────────────────────────────────────
 
   function initBulkActions(userId) {
     var toggleBtn   = document.querySelector('[wized="bulk-action-toggle"]');
@@ -1174,8 +1195,6 @@ window.addEventListener('load', async function() {
     }, true);
   }
 
-  // ── Load recipes ───────────────────────────────────────────────────────────
-
   async function loadProfileRecipes(userId) {
     var listEl             = document.querySelector('[wized="recipes-list"]');
     var templateEl         = document.querySelector('[wized="recipe-card-template"]');
@@ -1391,8 +1410,6 @@ window.addEventListener('load', async function() {
     }
   }
 
-  // ── Load favorite recipes ──────────────────────────────────────────────────
-
   async function loadFavoriteRecipes(userId) {
     var listEl             = document.querySelector('[wized="favorites-list"]');
     var templateEl         = document.querySelector('[wized="favorites-card-template"]');
@@ -1533,8 +1550,6 @@ window.addEventListener('load', async function() {
     }
   }
 
-  // ── Load favorite notes ────────────────────────────────────────────────────
-
   async function loadFavoriteNotes(userId) {
     var listEl          = document.querySelector('[wized="favorites-list"]');
     var favNotesEmptyEl = document.querySelector('[wized="favorited-notes-empty"]');
@@ -1596,23 +1611,17 @@ window.addEventListener('load', async function() {
     if (bulkActionsEl) bulkActionsEl.style.setProperty('display', 'flex', 'important');
   }
 
-  // ── Boot ───────────────────────────────────────────────────────────────────
-
   try {
-    console.log('boot start');
     var { data: sessionData } = await _supabase.auth.getSession();
-    console.log('session fetched');
     var session = sessionData?.session;
     if (!session) { window.location.href = 'https://sauce-share-4c2702.webflow.io/sign-up'; return; }
 
-    console.log('fetching profile');
     var { data: profile, error } = await _supabase
       .from('profiles')
       .select('username, avatar_selection, subscription_tier, bio, favorite_food, country, social_instagram, social_tiktok, social_youtube, social_pinterest, created_at, community_guidelines_agreed_at')
       .eq('id', session.user.id)
       .single();
 
-    console.log('profile fetched', profile, error);
     if (error || !profile) { showError('Could not load your profile. Please try refreshing.'); return; }
 
     if (usernameEl) usernameEl.textContent = '@' + profile.username;
@@ -1635,24 +1644,18 @@ window.addEventListener('load', async function() {
     if (mEl) mEl.textContent = formatDate(profile.created_at);
 
     window._sauceProfile = profile;
-    console.log('_sauceProfile set');
 
-    try { initWelcomeModal(session.user.id); } catch (modalErr) { console.log('modal err', modalErr); }
+    try { initWelcomeModal(session.user.id); } catch (modalErr) {}
 
-    console.log('initing sections');
     initAboutSection(profile, session.user.id);
     initAvatarModal(profile, session.user.id);
     initPanelTabs();
     initBulkActions(session.user.id);
     initFavoriteBulkActions(session.user.id);
-    console.log('finishing loading');
     await finishLoading();
-    console.log('loading recipes');
     await loadProfileRecipes(session.user.id);
-    console.log('loading favorites');
     await loadFavoriteRecipes(session.user.id);
     await loadFavoriteNotes(session.user.id);
-    console.log('done');
 
     function hideFavEmptyIfHasCards() {
       var favListEl  = document.querySelector('[wized="favorites-list"]');
@@ -1667,7 +1670,6 @@ window.addEventListener('load', async function() {
     setTimeout(hideFavEmptyIfHasCards, 2000);
 
   } catch (err) {
-    console.log('CAUGHT ERROR:', err.message, err.stack);
     showError('Something went wrong loading your profile. This may be due to a network issue. Please try refreshing.');
   }
 
