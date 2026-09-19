@@ -217,7 +217,7 @@ window.addEventListener('load', async function() {
     if (f) f.value = profile.favorite_food || '';
     if (c) c.value = profile.country       || '';
     ['instagram','tiktok','youtube','pinterest'].forEach(function(key) {
-      var el = document.querySelector('[wized="about_" + key + "_input"]');
+      var el = document.querySelector('[wized="about_' + key + '_input"]');
       if (el) el.value = profile['social_' + key] || '';
     });
     updateBioCounter();
