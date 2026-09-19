@@ -217,7 +217,7 @@ window.addEventListener('load', async function() {
     if (f) f.value = profile.favorite_food || '';
     if (c) c.value = profile.country       || '';
     ['instagram','tiktok','youtube','pinterest'].forEach(function(key) {
-      var el = document.querySelector('[wized="about_' + key + '_input"]');
+      var el = document.querySelector('[wized="about_" + key + "_input"]');
       if (el) el.value = profile['social_' + key] || '';
     });
     updateBioCounter();
@@ -286,6 +286,192 @@ window.addEventListener('load', async function() {
       result[key] = handle || null;
     });
     return { values: result, error: error };
+  }
+
+  // ── Delete Account ──────────────────────────────────────────────────────────
+  function initDeleteAccount(session) {
+    var trigger     = document.querySelector('[wized="delete-account-trigger"]');
+    var panel       = document.querySelector('[wized="delete-account-panel"]');
+    var step1       = document.querySelector('[wized="delete-account-step-1"]');
+    var step2       = document.querySelector('[wized="delete-account-step-2"]');
+    var step3       = document.querySelector('[wized="delete-account-step-3"]');
+    var continueBtn = document.querySelector('[wized="delete-account-continue"]');
+    var confirmBtn  = document.querySelector('[wized="delete-account-confirm"]');
+    var loadingEl   = document.querySelector('[wized="delete-account-loading"]');
+    var cancelBtns  = document.querySelectorAll('[wized="delete-account-cancel"]');
+    var otherCheckbox = document.querySelector('[wized="delete-account-other-checkbox"]');
+    var otherText   = document.querySelector('[wized="delete-account-other-text"]');
+    var charCount   = document.querySelector('[wized="delete-account-char-count"]');
+    var submitBtn   = document.querySelector('[wized="delete-account-submit"]');
+    var skipBtn     = document.querySelector('[wized="delete-account-skip"]');
+
+    if (!panel) return;
+
+    // Hide panel and all steps by default
+    panel.style.setProperty('display', 'none', 'important');
+    if (step1) step1.style.setProperty('display', 'none', 'important');
+    if (step2) step2.style.setProperty('display', 'none', 'important');
+    if (step3) step3.style.setProperty('display', 'none', 'important');
+    if (loadingEl) loadingEl.style.setProperty('display', 'none', 'important');
+    if (otherText) otherText.style.setProperty('display', 'none', 'important');
+
+    function showPanel() {
+      panel.style.setProperty('display', 'block', 'important');
+      if (step1) step1.style.setProperty('display', 'block', 'important');
+      if (step2) step2.style.setProperty('display', 'none', 'important');
+      if (step3) step3.style.setProperty('display', 'none', 'important');
+    }
+
+    function hidePanel() {
+      panel.style.setProperty('display', 'none', 'important');
+      if (step1) step1.style.setProperty('display', 'none', 'important');
+      if (step2) step2.style.setProperty('display', 'none', 'important');
+      if (step3) step3.style.setProperty('display', 'none', 'important');
+    }
+
+    // Open panel from sidebar
+    if (trigger) {
+      trigger.addEventListener('click', function() {
+        showPanel();
+      });
+    }
+
+    // Cancel — hide panel and return to profile
+    cancelBtns.forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        hidePanel();
+      });
+    });
+
+    // Step 1 → Step 2
+    if (continueBtn) {
+      continueBtn.addEventListener('click', function() {
+        if (step1) step1.style.setProperty('display', 'none', 'important');
+        if (step2) step2.style.setProperty('display', 'block', 'important');
+      });
+    }
+
+    // Step 2 → Delete → Step 3
+    if (confirmBtn) {
+      confirmBtn.addEventListener('click', async function() {
+        if (loadingEl) loadingEl.style.setProperty('display', 'block', 'important');
+        confirmBtn.style.opacity = '0.5';
+        confirmBtn.style.pointerEvents = 'none';
+
+        try {
+          var token = session.access_token;
+          var res = await fetch(
+            'https://houohobadselkswaxwsy.supabase.co/functions/v1/delete-account',
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+              }
+            }
+          );
+
+          var data = await res.json();
+
+          if (!res.ok || !data.success) {
+            if (loadingEl) loadingEl.style.setProperty('display', 'none', 'important');
+            confirmBtn.style.opacity = '';
+            confirmBtn.style.pointerEvents = '';
+            alert('Something went wrong. Please try again.');
+            return;
+          }
+
+          // Sign out client-side
+          await _supabase.auth.signOut();
+
+          // Show survey
+          if (step2) step2.style.setProperty('display', 'none', 'important');
+          if (loadingEl) loadingEl.style.setProperty('display', 'none', 'important');
+          if (step3) step3.style.setProperty('display', 'block', 'important');
+
+        } catch (err) {
+          if (loadingEl) loadingEl.style.setProperty('display', 'none', 'important');
+          confirmBtn.style.opacity = '';
+          confirmBtn.style.pointerEvents = '';
+          alert('Something went wrong. Please try again.');
+        }
+      });
+    }
+
+    // Other checkbox — show/hide textarea
+    if (otherCheckbox && otherText) {
+      otherCheckbox.addEventListener('change', function() {
+        if (otherCheckbox.checked) {
+          otherText.style.setProperty('display', 'block', 'important');
+        } else {
+          otherText.style.setProperty('display', 'none', 'important');
+          otherText.value = '';
+          if (charCount) charCount.textContent = '0/250 Characters';
+        }
+      });
+    }
+
+    // Character counter for other text
+    if (otherText && charCount) {
+      otherText.addEventListener('input', function() {
+        var len = otherText.value.length;
+        if (len > 250) {
+          otherText.value = otherText.value.substring(0, 250);
+          len = 250;
+        }
+        charCount.textContent = len + '/250 Characters';
+      });
+    }
+
+    // Collect reasons helper
+    function collectReasons() {
+      var reasonEls = document.querySelectorAll('[wized="delete-account-reasons"] input[type="checkbox"]');
+      var reasons = [];
+      reasonEls.forEach(function(cb) {
+        if (cb === otherCheckbox) return; // handled separately
+        if (cb.checked) reasons.push(cb.value || cb.nextSibling?.textContent?.trim() || cb.parentElement?.textContent?.trim() || '');
+      });
+      if (otherCheckbox && otherCheckbox.checked) reasons.push('Other');
+      return reasons;
+    }
+
+    // Submit survey
+    async function submitFeedback() {
+      var reasons   = collectReasons();
+      var otherVal  = (otherText && otherCheckbox && otherCheckbox.checked) ? (otherText.value || '').trim() : null;
+
+      // Skip silently if nothing selected
+      if (reasons.length === 0 && !otherVal) {
+        window.location.href = '/?deleted=true';
+        return;
+      }
+
+      try {
+        await _supabase.from('deletion_feedback').insert({
+          reasons:    reasons,
+          other_text: otherVal || null
+        });
+      } catch(e) {
+        // Non-fatal — proceed to redirect regardless
+      }
+
+      window.location.href = '/?deleted=true';
+    }
+
+    if (submitBtn) {
+      submitBtn.addEventListener('click', async function() {
+        submitBtn.style.opacity = '0.5';
+        submitBtn.style.pointerEvents = 'none';
+        await submitFeedback();
+      });
+    }
+
+    // Skip — redirect without saving feedback
+    if (skipBtn) {
+      skipBtn.addEventListener('click', function() {
+        window.location.href = '/?deleted=true';
+      });
+    }
   }
 
   function initAvatarModal(profile, userId) {
@@ -1649,6 +1835,7 @@ window.addEventListener('load', async function() {
 
     initAboutSection(profile, session.user.id);
     initAvatarModal(profile, session.user.id);
+    initDeleteAccount(session);
     initPanelTabs();
     initBulkActions(session.user.id);
     initFavoriteBulkActions(session.user.id);
