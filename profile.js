@@ -395,8 +395,7 @@ window.addEventListener('load', async function() {
             return;
           }
 
-          await _supabase.auth.signOut();
-
+          // Don't sign out yet — wait until after survey is submitted
           if (step2) step2.style.setProperty('display', 'none', 'important');
           hideLoadingSection();
           if (step3) step3.style.setProperty('display', 'block', 'important');
@@ -449,6 +448,7 @@ window.addEventListener('load', async function() {
       var otherVal = (otherText && otherCheckbox && otherCheckbox.checked) ? (otherText.value || '').trim() : null;
 
       if (reasons.length === 0 && !otherVal) {
+        await _supabase.auth.signOut();
         window.location.href = '/?deleted=true';
         return;
       }
@@ -463,6 +463,7 @@ window.addEventListener('load', async function() {
         console.log('Feedback insert error:', e);
       }
 
+      await _supabase.auth.signOut();
       window.location.href = '/?deleted=true';
     }
 
@@ -475,7 +476,8 @@ window.addEventListener('load', async function() {
     }
 
     if (skipBtn) {
-      skipBtn.addEventListener('click', function() {
+      skipBtn.addEventListener('click', async function() {
+        await _supabase.auth.signOut();
         window.location.href = '/?deleted=true';
       });
     }
