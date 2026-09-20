@@ -289,6 +289,9 @@ window.addEventListener('load', async function() {
   }
 
   // ── Delete Account ──────────────────────────────────────────────────────────
+  // Step 1: "We hate to see you go!" + Continue to Delete
+  // Step 2: Survey — collect reasons, Submit or Skip advances to step 3
+  // Step 3: Final confirmation "Delete your account?" + Delete Account button
   function initDeleteAccount(session) {
     var trigger        = document.querySelector('[wized="delete-account-trigger"]');
     var panel          = document.querySelector('[wized="delete-account-panel"]');
@@ -296,14 +299,14 @@ window.addEventListener('load', async function() {
     var step2          = document.querySelector('[wized="delete-account-step-2"]');
     var step3          = document.querySelector('[wized="delete-account-step-3"]');
     var continueBtn    = document.querySelector('[wized="delete-account-continue"]');
+    var submitBtn      = document.querySelector('[wized="delete-account-submit"]');
+    var skipBtn        = document.querySelector('[wized="delete-account-skip"]');
     var confirmBtn     = document.querySelector('[wized="delete-account-confirm"]');
     var loadingSection = document.querySelector('[wized="delete-account-loading-section"]');
     var cancelBtns     = document.querySelectorAll('[wized="delete-account-cancel"]');
     var otherCheckbox  = document.querySelector('[wized="delete-account-other-checkbox"]');
     var otherText      = document.querySelector('[wized="delete-account-other-text"]');
     var charCount      = document.querySelector('[wized="delete-account-char-count"]');
-    var submitBtn      = document.querySelector('[wized="delete-account-submit"]');
-    var skipBtn        = document.querySelector('[wized="delete-account-skip"]');
 
     if (!panel) return;
 
@@ -348,17 +351,14 @@ window.addEventListener('load', async function() {
     }
 
     if (trigger) {
-      trigger.addEventListener('click', function() {
-        showPanel();
-      });
+      trigger.addEventListener('click', function() { showPanel(); });
     }
 
     cancelBtns.forEach(function(btn) {
-      btn.addEventListener('click', function() {
-        hidePanel();
-      });
+      btn.addEventListener('click', function() { hidePanel(); });
     });
 
+    // Step 1 → Step 2 (survey)
     if (continueBtn) {
       continueBtn.addEventListener('click', function() {
         if (step1) step1.style.setProperty('display', 'none', 'important');
@@ -366,49 +366,7 @@ window.addEventListener('load', async function() {
       });
     }
 
-    if (confirmBtn) {
-      confirmBtn.addEventListener('click', async function() {
-        showLoadingSection();
-        confirmBtn.style.opacity = '0.5';
-        confirmBtn.style.pointerEvents = 'none';
-
-        try {
-          var token = session.access_token;
-          var res = await fetch(
-            'https://houohobadselkswaxwsy.supabase.co/functions/v1/delete-account',
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + token
-              }
-            }
-          );
-
-          var data = await res.json();
-
-          if (!res.ok || !data.success) {
-            hideLoadingSection();
-            confirmBtn.style.opacity = '';
-            confirmBtn.style.pointerEvents = '';
-            alert('Something went wrong. Please try again.');
-            return;
-          }
-
-          // Don't sign out yet — wait until after survey is submitted
-          if (step2) step2.style.setProperty('display', 'none', 'important');
-          hideLoadingSection();
-          if (step3) step3.style.setProperty('display', 'block', 'important');
-
-        } catch (err) {
-          hideLoadingSection();
-          confirmBtn.style.opacity = '';
-          confirmBtn.style.pointerEvents = '';
-          alert('Something went wrong. Please try again.');
-        }
-      });
-    }
-
+    // Other checkbox — show/hide textarea
     if (otherCheckbox && otherText) {
       otherCheckbox.addEventListener('change', function() {
         if (otherCheckbox.checked) {
@@ -421,6 +379,7 @@ window.addEventListener('load', async function() {
       });
     }
 
+    // Character counter
     if (otherText && charCount) {
       otherText.addEventListener('input', function() {
         var len = otherText.value.length;
@@ -443,42 +402,86 @@ window.addEventListener('load', async function() {
       return reasons;
     }
 
-    async function submitFeedback() {
-      var reasons  = collectReasons();
-      var otherVal = (otherText && otherCheckbox && otherCheckbox.checked) ? (otherText.value || '').trim() : null;
-
-      if (reasons.length === 0 && !otherVal) {
-        await _supabase.auth.signOut();
-        window.location.href = '/?deleted=true';
-        return;
-      }
-
-      try {
-        var result = await _supabase.from('deletion_feedback').insert({
-          reasons:    reasons,
-          other_text: otherVal || null
-        });
-        console.log('Feedback insert result:', JSON.stringify(result));
-      } catch(e) {
-        console.log('Feedback insert error:', e);
-      }
-
-      await _supabase.auth.signOut();
-      window.location.href = '/?deleted=true';
-    }
-
+    // Step 2 Submit → Step 3 (saves reasons in memory)
     if (submitBtn) {
-      submitBtn.addEventListener('click', async function() {
-        submitBtn.style.opacity = '0.5';
-        submitBtn.style.pointerEvents = 'none';
-        await submitFeedback();
+      submitBtn.addEventListener('click', function() {
+        if (step2) step2.style.setProperty('display', 'none', 'important');
+        if (step3) step3.style.setProperty('display', 'block', 'important');
       });
     }
 
+    // Step 2 Skip → Step 3 (no reasons saved)
     if (skipBtn) {
-      skipBtn.addEventListener('click', async function() {
-        await _supabase.auth.signOut();
-        window.location.href = '/?deleted=true';
+      skipBtn.addEventListener('click', function() {
+        if (step2) step2.style.setProperty('display', 'none', 'important');
+        if (step3) step3.style.setProperty('display', 'block', 'important');
+      });
+    }
+
+    // Step 3 Delete Account — send feedback + delete
+    if (confirmBtn) {
+      confirmBtn.addEventListener('click', async function() {
+        showLoadingSection();
+        confirmBtn.style.opacity = '0.5';
+        confirmBtn.style.pointerEvents = 'none';
+
+        // Collect feedback — only if Submit was the path (skip = no feedback)
+        var reasons  = null;
+        var otherVal = null;
+        if (submitBtn && submitBtn._submitted) {
+          reasons  = collectReasons();
+          otherVal = (otherText && otherCheckbox && otherCheckbox.checked) ? (otherText.value || '').trim() : null;
+        }
+
+        try {
+          var token = session.access_token;
+          var res = await fetch(
+            'https://houohobadselkswaxwsy.supabase.co/functions/v1/delete-account',
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+              },
+              body: JSON.stringify({
+                reasons:    reasons && reasons.length > 0 ? reasons : null,
+                other_text: otherVal || null
+              })
+            }
+          );
+
+          var data = await res.json();
+
+          if (!res.ok || !data.success) {
+            hideLoadingSection();
+            confirmBtn.style.opacity = '';
+            confirmBtn.style.pointerEvents = '';
+            alert('Something went wrong. Please try again.');
+            return;
+          }
+
+          await _supabase.auth.signOut();
+          window.location.href = '/?deleted=true';
+
+        } catch (err) {
+          hideLoadingSection();
+          confirmBtn.style.opacity = '';
+          confirmBtn.style.pointerEvents = '';
+          alert('Something went wrong. Please try again.');
+        }
+      });
+    }
+
+    // Track whether Submit was clicked vs Skip
+    if (submitBtn) {
+      submitBtn._submitted = false;
+      submitBtn.addEventListener('click', function() {
+        submitBtn._submitted = true;
+      });
+    }
+    if (skipBtn) {
+      skipBtn.addEventListener('click', function() {
+        if (submitBtn) submitBtn._submitted = false;
       });
     }
   }
