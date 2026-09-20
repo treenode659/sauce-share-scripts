@@ -322,7 +322,6 @@ window.addEventListener('load', async function() {
     }
 
     function showPanel() {
-      // Hide all other content panels
       var aboutPanel   = document.querySelector('[wized="panel-content-about"]');
       var recipesPanel = document.querySelector('[wized="panel-content-recipes"]');
       var statsPanel   = document.querySelector('[wized="panel-content-stats"]');
@@ -331,7 +330,6 @@ window.addEventListener('load', async function() {
       if (recipesPanel) recipesPanel.style.setProperty('display', 'none', 'important');
       if (statsPanel)   statsPanel.style.setProperty('display', 'none', 'important');
       if (quizzesPanel) quizzesPanel.style.setProperty('display', 'none', 'important');
-      // Show panel at step 1
       panel.style.setProperty('display', 'block', 'important');
       if (step1) step1.style.setProperty('display', 'block', 'important');
       if (step2) step2.style.setProperty('display', 'none', 'important');
@@ -345,26 +343,22 @@ window.addEventListener('load', async function() {
       if (step2) step2.style.setProperty('display', 'none', 'important');
       if (step3) step3.style.setProperty('display', 'none', 'important');
       hideLoadingSection();
-      // Restore default about panel
       var aboutPanel = document.querySelector('[wized="panel-content-about"]');
       if (aboutPanel) aboutPanel.style.setProperty('display', 'block', 'important');
     }
 
-    // Open panel from sidebar
     if (trigger) {
       trigger.addEventListener('click', function() {
         showPanel();
       });
     }
 
-    // Cancel — hide panel and return to profile
     cancelBtns.forEach(function(btn) {
       btn.addEventListener('click', function() {
         hidePanel();
       });
     });
 
-    // Step 1 → Step 2
     if (continueBtn) {
       continueBtn.addEventListener('click', function() {
         if (step1) step1.style.setProperty('display', 'none', 'important');
@@ -372,7 +366,6 @@ window.addEventListener('load', async function() {
       });
     }
 
-    // Step 2 → Delete → Step 3
     if (confirmBtn) {
       confirmBtn.addEventListener('click', async function() {
         showLoadingSection();
@@ -402,10 +395,8 @@ window.addEventListener('load', async function() {
             return;
           }
 
-          // Sign out client-side
           await _supabase.auth.signOut();
 
-          // Show survey
           if (step2) step2.style.setProperty('display', 'none', 'important');
           hideLoadingSection();
           if (step3) step3.style.setProperty('display', 'block', 'important');
@@ -419,7 +410,6 @@ window.addEventListener('load', async function() {
       });
     }
 
-    // Other checkbox — show/hide textarea
     if (otherCheckbox && otherText) {
       otherCheckbox.addEventListener('change', function() {
         if (otherCheckbox.checked) {
@@ -432,7 +422,6 @@ window.addEventListener('load', async function() {
       });
     }
 
-    // Character counter for other text
     if (otherText && charCount) {
       otherText.addEventListener('input', function() {
         var len = otherText.value.length;
@@ -444,19 +433,17 @@ window.addEventListener('load', async function() {
       });
     }
 
-    // Collect reasons helper
     function collectReasons() {
       var reasonEls = document.querySelectorAll('[wized="delete-account-reasons"] input[type="checkbox"]');
       var reasons = [];
       reasonEls.forEach(function(cb) {
         if (cb === otherCheckbox) return;
-        if (cb.checked) reasons.push(cb.value || cb.parentElement?.textContent?.trim() || '');
+        if (cb.checked) reasons.push(cb.getAttribute('data-value') || '');
       });
-      if (otherCheckbox && otherCheckbox.checked) reasons.push('Other');
+      if (otherCheckbox && otherCheckbox.checked) reasons.push('Something else');
       return reasons;
     }
 
-    // Submit survey
     async function submitFeedback() {
       var reasons  = collectReasons();
       var otherVal = (otherText && otherCheckbox && otherCheckbox.checked) ? (otherText.value || '').trim() : null;
@@ -467,12 +454,13 @@ window.addEventListener('load', async function() {
       }
 
       try {
-        await _supabase.from('deletion_feedback').insert({
+        var result = await _supabase.from('deletion_feedback').insert({
           reasons:    reasons,
           other_text: otherVal || null
         });
+        console.log('Feedback insert result:', JSON.stringify(result));
       } catch(e) {
-        // Non-fatal — redirect regardless
+        console.log('Feedback insert error:', e);
       }
 
       window.location.href = '/?deleted=true';
@@ -681,7 +669,6 @@ window.addEventListener('load', async function() {
       tabs.forEach(function(t) {
         var tabEl = document.querySelector('[wized="' + t.tab + '"]');
         if (tabEl && (e.target === tabEl || e.target === tabEl.previousElementSibling)) {
-          // Also hide delete panel if a tab is clicked
           var deletePanel = document.querySelector('[wized="delete-account-panel"]');
           if (deletePanel) deletePanel.style.setProperty('display', 'none', 'important');
           showTab(t.content);
