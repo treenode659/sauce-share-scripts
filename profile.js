@@ -310,6 +310,10 @@ window.addEventListener('load', async function() {
 
     if (!panel) return;
 
+    // Store feedback in memory when Submit is clicked
+    var _collectedReasons   = null;
+    var _collectedOtherText = null;
+
     // Hide everything on init
     panel.style.setProperty('display', 'none', 'important');
     if (step2)          step2.style.setProperty('display', 'none', 'important');
@@ -338,6 +342,8 @@ window.addEventListener('load', async function() {
       if (step2) step2.style.setProperty('display', 'none', 'important');
       if (step3) step3.style.setProperty('display', 'none', 'important');
       hideLoadingSection();
+      _collectedReasons   = null;
+      _collectedOtherText = null;
     }
 
     function hidePanel() {
@@ -346,6 +352,8 @@ window.addEventListener('load', async function() {
       if (step2) step2.style.setProperty('display', 'none', 'important');
       if (step3) step3.style.setProperty('display', 'none', 'important');
       hideLoadingSection();
+      _collectedReasons   = null;
+      _collectedOtherText = null;
       var aboutPanel = document.querySelector('[wized="panel-content-about"]');
       if (aboutPanel) aboutPanel.style.setProperty('display', 'block', 'important');
     }
@@ -402,36 +410,34 @@ window.addEventListener('load', async function() {
       return reasons;
     }
 
-    // Step 2 Submit → Step 3 (saves reasons in memory)
+    // Step 2 Submit → collect feedback + advance to step 3
     if (submitBtn) {
       submitBtn.addEventListener('click', function() {
+        _collectedReasons   = collectReasons();
+        _collectedOtherText = (otherText && otherCheckbox && otherCheckbox.checked)
+          ? (otherText.value || '').trim()
+          : null;
         if (step2) step2.style.setProperty('display', 'none', 'important');
         if (step3) step3.style.setProperty('display', 'block', 'important');
       });
     }
 
-    // Step 2 Skip → Step 3 (no reasons saved)
+    // Step 2 Skip → clear feedback + advance to step 3
     if (skipBtn) {
       skipBtn.addEventListener('click', function() {
+        _collectedReasons   = null;
+        _collectedOtherText = null;
         if (step2) step2.style.setProperty('display', 'none', 'important');
         if (step3) step3.style.setProperty('display', 'block', 'important');
       });
     }
 
-    // Step 3 Delete Account — send feedback + delete
+    // Step 3 Delete Account — send collected feedback + delete
     if (confirmBtn) {
       confirmBtn.addEventListener('click', async function() {
         showLoadingSection();
         confirmBtn.style.opacity = '0.5';
         confirmBtn.style.pointerEvents = 'none';
-
-        // Collect feedback — only if Submit was the path (skip = no feedback)
-        var reasons  = null;
-        var otherVal = null;
-        if (submitBtn && submitBtn._submitted) {
-          reasons  = collectReasons();
-          otherVal = (otherText && otherCheckbox && otherCheckbox.checked) ? (otherText.value || '').trim() : null;
-        }
 
         try {
           var token = session.access_token;
@@ -444,8 +450,8 @@ window.addEventListener('load', async function() {
                 'Authorization': 'Bearer ' + token
               },
               body: JSON.stringify({
-                reasons:    reasons && reasons.length > 0 ? reasons : null,
-                other_text: otherVal || null
+                reasons:    _collectedReasons && _collectedReasons.length > 0 ? _collectedReasons : null,
+                other_text: _collectedOtherText || null
               })
             }
           );
@@ -469,19 +475,6 @@ window.addEventListener('load', async function() {
           confirmBtn.style.pointerEvents = '';
           alert('Something went wrong. Please try again.');
         }
-      });
-    }
-
-    // Track whether Submit was clicked vs Skip
-    if (submitBtn) {
-      submitBtn._submitted = false;
-      submitBtn.addEventListener('click', function() {
-        submitBtn._submitted = true;
-      });
-    }
-    if (skipBtn) {
-      skipBtn.addEventListener('click', function() {
-        if (submitBtn) submitBtn._submitted = false;
       });
     }
   }
