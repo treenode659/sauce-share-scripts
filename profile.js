@@ -338,7 +338,7 @@ window.addEventListener('load', async function() {
       if (statsPanel)   statsPanel.style.setProperty('display', 'none', 'important');
       if (quizzesPanel) quizzesPanel.style.setProperty('display', 'none', 'important');
       panel.style.setProperty('display', 'block', 'important');
-      if (step1) step1.style.setProperty('display', 'block', 'important');
+      if (step1) step1.style.setProperty('display', 'flex', 'important');
       if (step2) step2.style.setProperty('display', 'none', 'important');
       if (step3) step3.style.setProperty('display', 'none', 'important');
       hideLoadingSection();
@@ -370,7 +370,7 @@ window.addEventListener('load', async function() {
     if (continueBtn) {
       continueBtn.addEventListener('click', function() {
         if (step1) step1.style.setProperty('display', 'none', 'important');
-        if (step2) step2.style.setProperty('display', 'block', 'important');
+        if (step2) step2.style.setProperty('display', 'flex', 'important');
       });
     }
 
@@ -418,7 +418,7 @@ window.addEventListener('load', async function() {
           ? (otherText.value || '').trim()
           : null;
         if (step2) step2.style.setProperty('display', 'none', 'important');
-        if (step3) step3.style.setProperty('display', 'block', 'important');
+        if (step3) step3.style.setProperty('display', 'flex', 'important');
       });
     }
 
@@ -428,7 +428,7 @@ window.addEventListener('load', async function() {
         _collectedReasons   = null;
         _collectedOtherText = null;
         if (step2) step2.style.setProperty('display', 'none', 'important');
-        if (step3) step3.style.setProperty('display', 'block', 'important');
+        if (step3) step3.style.setProperty('display', 'flex', 'important');
       });
     }
 
