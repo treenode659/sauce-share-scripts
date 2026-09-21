@@ -354,8 +354,25 @@ window.addEventListener('load', async function() {
       hideLoadingSection();
       _collectedReasons   = null;
       _collectedOtherText = null;
+
+      // Restore about panel
       var aboutPanel = document.querySelector('[wized="panel-content-about"]');
       if (aboutPanel) aboutPanel.style.setProperty('display', 'block', 'important');
+
+      // Deselect delete account trigger
+      if (trigger) {
+        trigger.checked = false;
+        var triggerPrev = trigger.previousElementSibling;
+        if (triggerPrev) triggerPrev.classList.remove('w--redirected-checked');
+      }
+
+      // Reselect about tab
+      var aboutTab = document.querySelector('[wized="panel-tab-about"]');
+      if (aboutTab) {
+        aboutTab.checked = true;
+        var aboutPrev = aboutTab.previousElementSibling;
+        if (aboutPrev) aboutPrev.classList.add('w--redirected-checked');
+      }
     }
 
     if (trigger) {
