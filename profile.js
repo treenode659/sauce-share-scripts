@@ -400,7 +400,7 @@ window.addEventListener('load', async function() {
     }
 
     function collectReasons() {
-      var reasonEls = document.querySelectorAll('[wized="delete-account-reasons"] input[type="checkbox"]');
+      var reasonEls = document.querySelectorAll('[wized="delete-account-reasons"] input[type="radio"]');
       var reasons = [];
       reasonEls.forEach(function(cb) {
         if (cb === otherCheckbox) return;
