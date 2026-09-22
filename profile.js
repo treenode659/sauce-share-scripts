@@ -1,3 +1,4 @@
+<script>
 window.addEventListener('load', async function() {
 
   var loadStart = Date.now();
@@ -11,7 +12,6 @@ window.addEventListener('load', async function() {
   var modalEl       = document.querySelector('[wized="welcome-modal"]');
   var avatarModalEl = document.querySelector('[wized="avatar-modal"]');
 
-  // ── Progress bar ────────────────────────────────────────────────────────────
   function startProgressBar() {
     var bar = document.querySelector('[wized="progress-bar-fill"]');
     if (!bar) return null;
@@ -289,9 +289,6 @@ window.addEventListener('load', async function() {
   }
 
   // ── Delete Account ──────────────────────────────────────────────────────────
-  // Step 1: "We hate to see you go!" + Continue to Delete
-  // Step 2: Survey — collect reasons, Submit or Skip advances to step 3
-  // Step 3: Final confirmation "Delete your account?" + Delete Account button
   function initDeleteAccount(session) {
     var trigger        = document.querySelector('[wized="delete-account-trigger"]');
     var panel          = document.querySelector('[wized="delete-account-panel"]');
@@ -306,11 +303,11 @@ window.addEventListener('load', async function() {
     var cancelBtns     = document.querySelectorAll('[wized="delete-account-cancel"]');
     var otherCheckbox  = document.querySelector('[wized="delete-account-other-checkbox"]');
     var otherText      = document.querySelector('[wized="delete-account-other-text"]');
+    var otherWrapper   = document.querySelector('[wized="delete-account-input-wrapper"]');
     var charCount      = document.querySelector('[wized="delete-account-char-count"]');
 
     if (!panel) return;
 
-    // Store feedback in memory when Submit is clicked
     var _collectedReasons   = null;
     var _collectedOtherText = null;
 
@@ -319,7 +316,7 @@ window.addEventListener('load', async function() {
     if (step2)          step2.style.setProperty('display', 'none', 'important');
     if (step3)          step3.style.setProperty('display', 'none', 'important');
     if (loadingSection) loadingSection.style.setProperty('display', 'none', 'important');
-    if (otherText)      otherText.style.setProperty('display', 'none', 'important');
+    if (otherWrapper)   otherWrapper.style.setProperty('display', 'none', 'important');
 
     function showLoadingSection() {
       if (loadingSection) loadingSection.style.setProperty('display', 'block', 'important');
@@ -355,18 +352,15 @@ window.addEventListener('load', async function() {
       _collectedReasons   = null;
       _collectedOtherText = null;
 
-      // Restore about panel
       var aboutPanel = document.querySelector('[wized="panel-content-about"]');
       if (aboutPanel) aboutPanel.style.setProperty('display', 'block', 'important');
 
-      // Deselect delete account trigger
       if (trigger) {
         trigger.checked = false;
         var triggerPrev = trigger.previousElementSibling;
         if (triggerPrev) triggerPrev.classList.remove('w--redirected-checked');
       }
 
-      // Reselect about tab
       var aboutTab = document.querySelector('[wized="panel-tab-about"]');
       if (aboutTab) {
         aboutTab.checked = true;
@@ -383,7 +377,6 @@ window.addEventListener('load', async function() {
       btn.addEventListener('click', function() { hidePanel(); });
     });
 
-    // Step 1 → Step 2 (survey)
     if (continueBtn) {
       continueBtn.addEventListener('click', function() {
         if (step1) step1.style.setProperty('display', 'none', 'important');
@@ -391,15 +384,15 @@ window.addEventListener('load', async function() {
       });
     }
 
-    // Other checkbox — show/hide textarea
-    if (otherCheckbox && otherText) {
+    // "Something else" checkbox — show/hide input wrapper
+    if (otherCheckbox) {
       otherCheckbox.addEventListener('change', function() {
         if (otherCheckbox.checked) {
-          otherText.style.setProperty('display', 'block', 'important');
+          if (otherWrapper) otherWrapper.style.setProperty('display', 'flex', 'important');
         } else {
-          otherText.style.setProperty('display', 'none', 'important');
-          otherText.value = '';
-          if (charCount) charCount.textContent = '0/250 Characters';
+          if (otherWrapper) otherWrapper.style.setProperty('display', 'none', 'important');
+          if (otherText)    otherText.value = '';
+          if (charCount)    charCount.textContent = '0/250 Characters';
         }
       });
     }
@@ -430,10 +423,14 @@ window.addEventListener('load', async function() {
     // Step 2 Submit → collect feedback + advance to step 3
     if (submitBtn) {
       submitBtn.addEventListener('click', function() {
-        _collectedReasons   = collectReasons();
-        _collectedOtherText = (otherText && otherCheckbox && otherCheckbox.checked)
+        _collectedReasons = collectReasons();
+
+        // Sanitize other text — strip HTML tags before storing
+        var _rawOtherText = (otherText && otherCheckbox && otherCheckbox.checked)
           ? (otherText.value || '').trim()
           : null;
+        _collectedOtherText = _rawOtherText ? _rawOtherText.replace(/<[^>]*>/g, '') : null;
+
         if (step2) step2.style.setProperty('display', 'none', 'important');
         if (step3) step3.style.setProperty('display', 'flex', 'important');
       });
@@ -449,7 +446,7 @@ window.addEventListener('load', async function() {
       });
     }
 
-    // Step 3 Delete Account — send collected feedback + delete
+    // Step 3 Delete Account
     if (confirmBtn) {
       confirmBtn.addEventListener('click', async function() {
         showLoadingSection();
@@ -1884,3 +1881,4 @@ window.addEventListener('load', async function() {
   }
 
 });
+</script>
