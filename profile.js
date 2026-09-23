@@ -1,4 +1,3 @@
-<script>
 window.addEventListener('load', async function() {
 
   var loadStart = Date.now();
@@ -1881,4 +1880,3 @@ window.addEventListener('load', async function() {
   }
 
 });
-</script>
