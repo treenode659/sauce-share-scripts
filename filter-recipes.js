@@ -45,21 +45,14 @@ document.addEventListener('click', function(e) {
   var trigger = e.target.closest('.accordion_closed');
   if (!trigger) return;
 
-  // If this accordion is inside the add-recipe card, handle logged-in state here.
-  // (Logged-out clicks are already blocked in the capture-phase listener above,
-  // so this branch only ever runs for logged-in users.)
   var addRecipeCard = trigger.closest('.add-recipe_card');
   if (addRecipeCard) {
     if (!window._filterCardSession) {
-      // Safety fallback only — capture handler normally prevents reaching here.
       return;
     }
 
-    // Logged in: manually drive the accordion so Webflow doesn't need to.
-    // Use !important so our values win even if Webflow's interaction also fires.
     var detailsWrapper = addRecipeCard.querySelector('.add-recipe_section-details-wrapper');
     var arrow          = addRecipeCard.querySelector('.arrow-accordion_wrap');
-    // "text-add-recipe_helper 2" has both the base class and combo class "2"
     var helper2 = null;
     addRecipeCard.querySelectorAll('.text-add-recipe_helper').forEach(function(h) {
       if (h.classList.contains('2')) helper2 = h;
@@ -68,7 +61,6 @@ document.addEventListener('click', function(e) {
     var isOpen = detailsWrapper && getComputedStyle(detailsWrapper).display !== 'none';
 
     if (!isOpen) {
-      // Open
       if (detailsWrapper) detailsWrapper.style.setProperty('display', 'flex', 'important');
       if (arrow) {
         arrow.style.transition = 'transform 0.3s ease';
@@ -76,7 +68,6 @@ document.addEventListener('click', function(e) {
       }
       if (helper2) helper2.style.setProperty('display', 'block', 'important');
     } else {
-      // Close
       if (detailsWrapper) detailsWrapper.style.setProperty('display', 'none', 'important');
       if (arrow) {
         arrow.style.transition = 'transform 0.3s ease';
@@ -112,22 +103,15 @@ document.addEventListener('click', function(e) {
 });
 
 // ============================================
-// CAPTURE-PHASE BLOCKER: stop Webflow's accordion interaction when logged out.
-// Webflow's IX2 handler is bound to the accordion element and fires in the
-// target phase — before any bubble-phase document listener. By intercepting in
-// the CAPTURE phase at the document level (which runs first, top-down), we can
-// stopImmediatePropagation so the event never reaches the element and Webflow's
-// interaction never runs at all. Nothing touches helper2, the arrow, or the
-// wrapper, so there is no flash. Only the toast is shown.
+// CAPTURE-PHASE BLOCKER
 // ============================================
 document.addEventListener('click', function(e) {
   var trigger = e.target.closest('.accordion_closed');
   if (!trigger) return;
   var addRecipeCard = trigger.closest('.add-recipe_card');
   if (!addRecipeCard) return;
-  if (window._filterCardSession) return; // Logged in — allow normal handling
+  if (window._filterCardSession) return;
 
-  // Logged out — block Webflow's interaction entirely and show the toast.
   e.preventDefault();
   e.stopImmediatePropagation();
 
@@ -160,22 +144,15 @@ document.addEventListener('click', function(e) {
     toast.style.opacity = '0';
     setTimeout(function() { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 300);
   }, 3000);
-}, true); // capture phase
+}, true);
 
 // ============================================
-// GUARD: lock add-recipe card visuals when logged out.
-// Observes the entire .add-recipe_card subtree for style changes. When logged
-// out, the accordion never truly opens, so it keeps the wrapper hidden, the
-// arrow unrotated, and — critically — forces helper2 to STAY visible. Webflow's
-// native interaction hides helper2 (its "open" state) on click; we immediately
-// revert it so the hint text never disappears.
+// GUARD: lock add-recipe card visuals when logged out
 // ============================================
 window.addEventListener('load', function() {
   var addCard = document.querySelector('.add-recipe_card');
   if (!addCard) return;
 
-  // Find helper2 ("text-add-recipe_helper 2") and record its visible display.
-  // The accordion starts closed, so helper2 is visible at load — capture that value.
   var helper2 = null;
   addCard.querySelectorAll('.text-add-recipe_helper').forEach(function(h) {
     if (h.classList.contains('2')) helper2 = h;
@@ -187,9 +164,8 @@ window.addEventListener('load', function() {
   }
 
   var obs = new MutationObserver(function() {
-    if (window._filterCardSession) return; // Logged in — our click handler drives state, don't interfere
+    if (window._filterCardSession) return;
 
-    // Disconnect first to prevent infinite loop when we make our own style changes
     obs.disconnect();
 
     var wrapper = addCard.querySelector('.add-recipe_section-details-wrapper');
@@ -197,10 +173,8 @@ window.addEventListener('load', function() {
 
     if (wrapper) wrapper.style.setProperty('display', 'none', 'important');
     if (arrow)   arrow.style.setProperty('transform', 'rotate(0deg)', 'important');
-    // Force helper2 to stay visible — logged-out users never open the accordion
     if (helper2) helper2.style.setProperty('display', helper2Display, 'important');
 
-    // Reconnect to keep watching
     obs.observe(addCard, { attributes: true, attributeFilter: ['style'], subtree: true });
   });
 
@@ -379,10 +353,6 @@ document.addEventListener("DOMContentLoaded", function() {
     window.syncAllUI();
   }, true);
 
-  // Pantry checkboxes are native inputs — use change event so toggles fire
-  // reliably regardless of whether the user clicks the box or the label text.
-  // The click handler can't reliably catch these because clicking the label
-  // hits a sibling element, not the checkbox itself.
   document.addEventListener('change', function(e) {
     var checkbox = e.target;
     if (checkbox.getAttribute('data-wized') !== 'pantry_check') return;
@@ -391,7 +361,6 @@ document.addEventListener("DOMContentLoaded", function() {
 
     var current = window.pillState.selected_pantry.slice();
     if (checkbox.checked) {
-      // Enforce max of 8 — uncheck and bail if already at limit
       if (current.length >= 8) {
         checkbox.checked = false;
         var customCheck = checkbox.previousElementSibling;
@@ -528,7 +497,6 @@ document.addEventListener("DOMContentLoaded", function() {
     var pantryCount = window.pillState.selected_pantry.length;
     var pantryValid = (pantryCount === 0) || (pantryCount >= 2 && pantryCount <= 8);
 
-    // Visual feedback on pantry checkboxes when count is 1 (too few selected)
     var pantryContainer = document.querySelector('[data-wized="pantry_check"]');
     if (pantryContainer) {
       var pantryWrap = pantryContainer.closest('div') || pantryContainer.parentElement;
@@ -1010,7 +978,7 @@ window.addEventListener('load', function() {
             canvas.toBlob(async function(blob) {
               var compressedFile = new File([blob], file.name, { type: 'image/jpeg' });
               var statusEl = document.querySelector('.text-add-recipe-status');
-              if (statusEl) statusEl.textContent = 'Uploading...';
+              if (statusEl) { statusEl.textContent = 'Uploading...'; statusEl.style.color = ''; }
               if (authToken) {
                 try {
                   var formData = new FormData();
@@ -1025,12 +993,26 @@ window.addEventListener('load', function() {
                     window.Wized.data.v.photo_url  = result.photo_url;
                     window.Wized.data.v.photo_path = result.path;
                     var displayName = file.name.length > 20 ? file.name.substring(0, 20) + '...' : file.name;
-                    if (statusEl) statusEl.textContent = displayName;
+                    if (statusEl) { statusEl.textContent = displayName; statusEl.style.color = ''; }
                   } else {
-                    if (statusEl) statusEl.textContent = 'Upload failed';
+                    var serverError = result.error || '';
+                    var msg;
+                    if (response.status === 429) {
+                      msg = 'Daily upload limit reached. Try again tomorrow.';
+                    } else if (response.status === 401) {
+                      msg = 'Session expired. Please refresh the page.';
+                    } else if (serverError.toLowerCase().includes('too large')) {
+                      msg = 'File is too large. Maximum 5MB.';
+                    } else if (serverError.toLowerCase().includes('file type') || serverError.toLowerCase().includes('invalid')) {
+                      msg = 'Invalid file type. JPG, PNG, and WEBP only.';
+                    } else {
+                      msg = serverError || 'Upload failed. Please try again.';
+                    }
+                    if (statusEl) { statusEl.textContent = msg; statusEl.style.color = '#ff4d4d'; }
                   }
                 } catch(err) {
-                  if (statusEl) statusEl.textContent = 'Upload failed';
+                  var statusEl = document.querySelector('.text-add-recipe-status');
+                  if (statusEl) { statusEl.textContent = 'Upload failed. Please try again.'; statusEl.style.color = '#ff4d4d'; }
                 }
               }
             }, 'image/jpeg', 0.8);
@@ -1338,8 +1320,6 @@ window.addEventListener('load', function() {
     } catch(e) {
       _session = null;
     }
-    // Expose session globally on load so the accordion guard and click handler
-    // know the auth state immediately — not just after a filter-card radio is clicked.
     window._filterCardSession = _session;
     hideAllFilterCardStates();
   }
