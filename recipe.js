@@ -1246,7 +1246,6 @@ window.addEventListener('load', function () {
     var pinnedInner = card.querySelector('.note-card_inner');
     if (pinnedInner) pinnedInner.style.setProperty('row-gap', pinnedGap, 'important');
 
-
     var pinnedAvatarImg = card.querySelector(".note-author_avatar img") ||
                           card.querySelector(".note-author_avatar-image");
     if (pinnedAvatarImg && recipe.profiles?.avatar_selection) {
@@ -1585,5 +1584,61 @@ window.addEventListener('load', function() {
   }, 200);
 
   setTimeout(function() { clearInterval(checkShare); }, 10000);
+
+});
+
+// ============================================
+// RECRAFT HEADER IMAGE POLLING
+// ============================================
+window.addEventListener('load', function() {
+
+  var SUPABASE_URL = 'https://houohobadselkswaxwsy.supabase.co';
+  var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhvdW9ob2JhZHNlbGtzd2F4d3N5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxMTM0NTIsImV4cCI6MjA4OTY4OTQ1Mn0.hOBki3aRyTqOFy3CJZmrNBBULDoRxb9xRjz8iDUEMjo';
+
+  var _supabase = window._recipeSupabase || supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+    auth: { persistSession: false }
+  });
+
+  var checkReady = setInterval(function() {
+    var recipe = window.Wized?.data?.r?.get_recipe?.data?.[0];
+    if (!recipe) return;
+    clearInterval(checkReady);
+
+    // Only poll if recipe_header_recraft is not yet set
+    if (recipe.recipe_header_recraft) return;
+
+    var recipeId    = recipe.id;
+    var maxAttempts = 8;
+    var attempts    = 0;
+
+    var poll = setInterval(async function() {
+      attempts++;
+      try {
+        var { data, error } = await _supabase
+          .from('recipes')
+          .select('recipe_header_recraft')
+          .eq('id', recipeId)
+          .single();
+
+        if (error || !data?.recipe_header_recraft) {
+          if (attempts >= maxAttempts) clearInterval(poll);
+          return;
+        }
+
+        clearInterval(poll);
+
+        var headerEl = document.querySelector('[wized="recipe_header_image"]');
+        if (headerEl) {
+          headerEl.style.backgroundImage = 'url(' + data.recipe_header_recraft + ')';
+        }
+
+      } catch(e) {
+        if (attempts >= maxAttempts) clearInterval(poll);
+      }
+    }, 2500);
+
+  }, 200);
+
+  setTimeout(function() { clearInterval(checkReady); }, 10000);
 
 });
