@@ -221,14 +221,27 @@ window.addEventListener('load', function() {
     if (img.src && img.src.includes('.webp') && img.src.includes('icon-images')) {
       img.src = img.src.replace('.webp', '.svg');
       img.removeAttribute('srcset');
+      // Re-check after short delays in case Wized re-renders and reverts to .webp
+      setTimeout(function() {
+        if (img.src && img.src.includes('.webp') && img.src.includes('icon-images')) {
+          img.src = img.src.replace('.webp', '.svg');
+          img.removeAttribute('srcset');
+        }
+      }, 300);
+      setTimeout(function() {
+        if (img.src && img.src.includes('.webp') && img.src.includes('icon-images')) {
+          img.src = img.src.replace('.webp', '.svg');
+          img.removeAttribute('srcset');
+        }
+      }, 800);
+      setTimeout(function() {
+        if (img.src && img.src.includes('.webp') && img.src.includes('icon-images')) {
+          img.src = img.src.replace('.webp', '.svg');
+          img.removeAttribute('srcset');
+        }
+      }, 1500);
     }
     applyIconSize(img);
-  }
-
-  function swapIconsToSvg() {
-    iconAttrs.forEach(function(attr) {
-      document.querySelectorAll('[wized="' + attr + '"]').forEach(swapIfWebp);
-    });
   }
 
   function watchIconElement(img) {
@@ -1589,8 +1602,6 @@ window.addEventListener('load', function() {
 
 // ============================================
 // RECRAFT HEADER IMAGE POLLING
-// Replace the existing polling block at the
-// bottom of recipe.js with this version
 // ============================================
 window.addEventListener('load', function() {
 
@@ -1609,14 +1620,11 @@ window.addEventListener('load', function() {
     var urlParams   = new URLSearchParams(window.location.search);
     var forceRepoll = urlParams.get('recraft') === '1';
 
-    // Poll if no image yet, OR if redirected from an edit that triggered regeneration
     if (recipe.recipe_header_recraft && !forceRepoll) return;
 
-    var recipeId    = recipe.id;
-    var maxAttempts = 8;
-    var attempts    = 0;
-
-    // Store the URL we saw at poll start so we can detect if it changed
+    var recipeId     = recipe.id;
+    var maxAttempts  = 8;
+    var attempts     = 0;
     var lastKnownUrl = recipe.recipe_header_recraft || null;
 
     var poll = setInterval(async function() {
@@ -1635,8 +1643,6 @@ window.addEventListener('load', function() {
 
         var newUrl = data?.recipe_header_recraft;
 
-        // For new recipes: wait for any URL
-        // For edits (forceRepoll): wait for a URL that differs from what was there before
         var isReady = forceRepoll
           ? (newUrl && newUrl !== lastKnownUrl)
           : !!newUrl;
@@ -1653,7 +1659,6 @@ window.addEventListener('load', function() {
           headerEl.style.backgroundImage = 'url(' + newUrl + ')';
         }
 
-        // Clean the recraft param from the URL without reloading
         if (forceRepoll) {
           var cleanUrl = window.location.pathname + '?slug=' + urlParams.get('slug');
           window.history.replaceState({}, '', cleanUrl);
