@@ -1589,6 +1589,8 @@ window.addEventListener('load', function() {
 
 // ============================================
 // RECRAFT HEADER IMAGE POLLING
+// Replace the existing polling block at the
+// bottom of recipe.js with this version
 // ============================================
 window.addEventListener('load', function() {
 
@@ -1604,12 +1606,18 @@ window.addEventListener('load', function() {
     if (!recipe) return;
     clearInterval(checkReady);
 
-    // Only poll if recipe_header_recraft is not yet set
-    if (recipe.recipe_header_recraft) return;
+    var urlParams   = new URLSearchParams(window.location.search);
+    var forceRepoll = urlParams.get('recraft') === '1';
+
+    // Poll if no image yet, OR if redirected from an edit that triggered regeneration
+    if (recipe.recipe_header_recraft && !forceRepoll) return;
 
     var recipeId    = recipe.id;
     var maxAttempts = 8;
     var attempts    = 0;
+
+    // Store the URL we saw at poll start so we can detect if it changed
+    var lastKnownUrl = recipe.recipe_header_recraft || null;
 
     var poll = setInterval(async function() {
       attempts++;
@@ -1620,7 +1628,20 @@ window.addEventListener('load', function() {
           .eq('id', recipeId)
           .single();
 
-        if (error || !data?.recipe_header_recraft) {
+        if (error) {
+          if (attempts >= maxAttempts) clearInterval(poll);
+          return;
+        }
+
+        var newUrl = data?.recipe_header_recraft;
+
+        // For new recipes: wait for any URL
+        // For edits (forceRepoll): wait for a URL that differs from what was there before
+        var isReady = forceRepoll
+          ? (newUrl && newUrl !== lastKnownUrl)
+          : !!newUrl;
+
+        if (!isReady) {
           if (attempts >= maxAttempts) clearInterval(poll);
           return;
         }
@@ -1629,7 +1650,13 @@ window.addEventListener('load', function() {
 
         var headerEl = document.querySelector('[wized="recipe_header_image"]');
         if (headerEl) {
-          headerEl.style.backgroundImage = 'url(' + data.recipe_header_recraft + ')';
+          headerEl.style.backgroundImage = 'url(' + newUrl + ')';
+        }
+
+        // Clean the recraft param from the URL without reloading
+        if (forceRepoll) {
+          var cleanUrl = window.location.pathname + '?slug=' + urlParams.get('slug');
+          window.history.replaceState({}, '', cleanUrl);
         }
 
       } catch(e) {
