@@ -1038,7 +1038,7 @@ window.addEventListener('load', async function() {
       thumb.removeAttribute('srcset');
       thumb.removeAttribute('sizes');
       thumb.removeAttribute('loading');
-      thumb.setAttribute('src', recipe.header_image || '');
+      thumb.setAttribute('src', recipe.recipe_header_recraft || recipe.header_image || '');
       thumb.alt = recipe.recipe_title || '';
     }
     if (title) {
@@ -1230,7 +1230,7 @@ window.addEventListener('load', async function() {
 
               var { data: newRecipes } = await _supabase
                 .from('recipes')
-                .select('id, recipe_title, slug, header_image, base_pairing, flavor_profile, ingredients, directions, note_blurb, note_tried, note_details, photo_url, user_id')
+                .select('id, recipe_title, slug, header_image, recipe_header_recraft, base_pairing, flavor_profile, ingredients, directions, note_blurb, note_tried, note_details, photo_url, user_id')
                 .in('id', toAdd);
 
               if (newRecipes && listEl) {
@@ -1426,7 +1426,7 @@ window.addEventListener('load', async function() {
 
     var { data: recipes, error } = await _supabase
       .from('recipes')
-      .select('id, user_id, recipe_title, slug, header_image, base_pairing, flavor_profile, ingredients, directions, note_blurb, note_tried, note_details, photo_url')
+      .select('id, user_id, recipe_title, slug, header_image, recipe_header_recraft, base_pairing, flavor_profile, ingredients, directions, note_blurb, note_tried, note_details, photo_url')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
@@ -1479,7 +1479,7 @@ window.addEventListener('load', async function() {
         thumb.removeAttribute('srcset');
         thumb.removeAttribute('sizes');
         thumb.removeAttribute('loading');
-        thumb.setAttribute('src', recipe.header_image || '');
+        thumb.setAttribute('src', recipe.recipe_header_recraft || recipe.header_image || '');
         thumb.alt = recipe.recipe_title || '';
       }
       if (title) {
@@ -1640,7 +1640,7 @@ window.addEventListener('load', async function() {
 
     var { data: favorites, error } = await _supabase
       .from('favorites')
-      .select('recipe_id, created_at, recipes(id, recipe_title, slug, header_image, base_pairing, flavor_profile, ingredients, directions, note_blurb, note_tried, note_details, photo_url, user_id)')
+      .select('recipe_id, created_at, recipes(id, recipe_title, slug, header_image, recipe_header_recraft, base_pairing, flavor_profile, ingredients, directions, note_blurb, note_tried, note_details, photo_url, user_id)')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
