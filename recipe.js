@@ -221,25 +221,6 @@ window.addEventListener('load', function() {
     if (img.src && img.src.includes('.webp') && img.src.includes('icon-images')) {
       img.src = img.src.replace('.webp', '.svg');
       img.removeAttribute('srcset');
-      // Re-check after short delays in case Wized re-renders and reverts to .webp
-      setTimeout(function() {
-        if (img.src && img.src.includes('.webp') && img.src.includes('icon-images')) {
-          img.src = img.src.replace('.webp', '.svg');
-          img.removeAttribute('srcset');
-        }
-      }, 300);
-      setTimeout(function() {
-        if (img.src && img.src.includes('.webp') && img.src.includes('icon-images')) {
-          img.src = img.src.replace('.webp', '.svg');
-          img.removeAttribute('srcset');
-        }
-      }, 800);
-      setTimeout(function() {
-        if (img.src && img.src.includes('.webp') && img.src.includes('icon-images')) {
-          img.src = img.src.replace('.webp', '.svg');
-          img.removeAttribute('srcset');
-        }
-      }, 1500);
     }
     applyIconSize(img);
   }
@@ -248,7 +229,13 @@ window.addEventListener('load', function() {
     if (img._svgWatching) return;
     img._svgWatching = true;
     var attrObs = new MutationObserver(function() {
+      // Disconnect before changing src to avoid infinite loop
+      attrObs.disconnect();
       swapIfWebp(img);
+      // Reconnect after a short delay so we catch any further Wized re-renders
+      setTimeout(function() {
+        attrObs.observe(img, { attributes: true, attributeFilter: ['src'] });
+      }, 50);
     });
     attrObs.observe(img, { attributes: true, attributeFilter: ['src'] });
     swapIfWebp(img);
