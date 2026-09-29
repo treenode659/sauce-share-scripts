@@ -1,25 +1,3 @@
-// Force Wized to re-fetch recipe data after an edit redirect
-(function() {
-  var params = new URLSearchParams(window.location.search);
-  if (params.get('nocache') !== '1') return;
-
-  // Clean the URL immediately so a refresh doesn't re-trigger
-  var cleanUrl = window.location.pathname + '?slug=' + params.get('slug');
-  window.history.replaceState({}, '', cleanUrl);
-
-  // Wait for Wized to be ready, then re-execute the get_recipe request
-  var attempts = 0;
-  var tryRefresh = setInterval(function() {
-    attempts++;
-    if (window.Wized && window.Wized.requests && window.Wized.requests.execute) {
-      clearInterval(tryRefresh);
-      window.Wized.requests.execute('get_recipe').catch(function() {});
-    } else if (attempts >= 50) {
-      clearInterval(tryRefresh);
-    }
-  }, 100);
-})();
-
 document.addEventListener("DOMContentLoaded", function() {
   const progressBarFill = document.querySelector('.progress-bar_fill');
   const progressText    = document.querySelector('.progress-bar_label');
@@ -224,34 +202,6 @@ function applyAvatarStyle(imgEl, avatarSelection) {
   imgEl.style.padding        = avatarSelection === 'chef-hat' ? '6px' : '0px';
 }
 
-// ============================================
-// CAPITALIZE FIRST VISIBLE LETTER
-// Works for plain text and Quill HTML — skips
-// leading tags and entities, uppercases the
-// first cased character it finds.
-// ============================================
-function capitalizeFirstVisible(str) {
-  if (!str) return '';
-  var chars = Array.from(String(str).trim());
-  var inTag = false;
-  for (var i = 0; i < chars.length; i++) {
-    var ch = chars[i];
-    if (inTag) { if (ch === '>') inTag = false; continue; }
-    if (ch === '<') { inTag = true; continue; }
-    if (ch === '&') {
-      var j = i + 1, steps = 0;
-      while (j < chars.length && chars[j] !== ';' && steps < 10) { j++; steps++; }
-      if (j < chars.length && chars[j] === ';') { i = j; }
-      continue;
-    }
-    if (ch.toUpperCase() !== ch.toLowerCase()) {
-      chars[i] = ch.toUpperCase();
-      return chars.join('');
-    }
-  }
-  return chars.join('');
-}
-
 window.addEventListener('load', function() {
   var iconAttrs = ['icon_base', 'icon_flavor', 'icon_cuisine'];
 
@@ -279,8 +229,10 @@ window.addEventListener('load', function() {
     if (img._svgWatching) return;
     img._svgWatching = true;
     var attrObs = new MutationObserver(function() {
+      // Disconnect before changing src to avoid infinite loop
       attrObs.disconnect();
       swapIfWebp(img);
+      // Reconnect after a short delay so we catch any further Wized re-renders
       setTimeout(function() {
         attrObs.observe(img, { attributes: true, attributeFilter: ['src'] });
       }, 50);
@@ -330,20 +282,13 @@ window.addEventListener('load', function() {
         if (mediaContainer) mediaContainer.style.display = 'none';
       }
 
-      // note_details — sanitize then capitalize first visible letter
       if (recipe.note_details && window.DOMPurify) {
-        var clean = DOMPurify.sanitize(recipe.note_details, {
+        var clean  = DOMPurify.sanitize(recipe.note_details, {
           ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'br', 'p', 'ul', 'ol', 'li'],
           ALLOWED_ATTR: []
         });
         var noteEl = document.querySelector('[wized="note_details_display"]');
-        if (noteEl) noteEl.innerHTML = capitalizeFirstVisible(clean);
-      }
-
-      // sauce_story — render via script so Wized's sentence-case transform never fires
-      if (recipe.sauce_story) {
-        var sauceEl = document.querySelector('[wized="sauce_story_display"]');
-        if (sauceEl) sauceEl.textContent = capitalizeFirstVisible(recipe.sauce_story);
+        if (noteEl) noteEl.innerHTML = clean;
       }
 
       var username   = recipe.profiles && recipe.profiles.username;
@@ -1085,7 +1030,7 @@ window.addEventListener('load', function () {
     _authToken  = _stored ? JSON.parse(_stored).access_token : null;
   } catch(e) {}
 
-  var _supabase = window._recipeSupabase || supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  var _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
     global: { headers: { Authorization: _authToken ? 'Bearer ' + _authToken : '' } },
     auth:   { persistSession: false }
   });
