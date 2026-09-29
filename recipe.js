@@ -1,3 +1,25 @@
+// Force Wized to re-fetch recipe data after an edit redirect
+(function() {
+  var params = new URLSearchParams(window.location.search);
+  if (params.get('nocache') !== '1') return;
+
+  // Clean the URL immediately so a refresh doesn't re-trigger
+  var cleanUrl = window.location.pathname + '?slug=' + params.get('slug');
+  window.history.replaceState({}, '', cleanUrl);
+
+  // Wait for Wized to be ready, then re-execute the get_recipe request
+  var attempts = 0;
+  var tryRefresh = setInterval(function() {
+    attempts++;
+    if (window.Wized && window.Wized.requests && window.Wized.requests.execute) {
+      clearInterval(tryRefresh);
+      window.Wized.requests.execute('get_recipe').catch(function() {});
+    } else if (attempts >= 50) {
+      clearInterval(tryRefresh);
+    }
+  }, 100);
+})();
+
 document.addEventListener("DOMContentLoaded", function() {
   const progressBarFill = document.querySelector('.progress-bar_fill');
   const progressText    = document.querySelector('.progress-bar_label');
