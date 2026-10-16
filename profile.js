@@ -287,9 +287,36 @@ window.addEventListener('load', async function() {
     return { values: result, error: error };
   }
 
-  // ── Delete Account ──────────────────────────────────────────────────────────
+  // ── Billing / Account section ─────────────────────────────────────────────
+  function initBillingSection(profile) {
+    var tierValueEl       = document.querySelector('[wized="billing-tier-value"]');
+    var tierDescEl        = document.querySelector('[wized="billing-tier-description"]');
+    var waitlistBlockEl   = document.querySelector('[wized="billing-waitlist-block"]');
+
+    var tier = (profile.subscription_tier || 'free').toLowerCase();
+
+    var tierLabel = tier === 'plus' ? 'Plus' : tier === 'pro' ? 'Pro' : 'Free';
+    var tierDesc  = tier === 'plus'
+      ? 'You\'re on the Plus plan.'
+      : tier === 'pro'
+      ? 'You\'re on the Pro plan.'
+      : 'You\'re on the free plan. Upgrade to Plus or Pro when they launch for recipe collections, shopping lists, and early access to new features.';
+
+    if (tierValueEl)     tierValueEl.textContent = tierLabel;
+    if (tierDescEl)      tierDescEl.textContent  = tierDesc;
+
+    if (waitlistBlockEl) {
+      if (tier === 'free') {
+        waitlistBlockEl.style.removeProperty('display');
+      } else {
+        waitlistBlockEl.style.setProperty('display', 'none', 'important');
+      }
+    }
+  }
+
+  // ── Delete Account ────────────────────────────────────────────────────────
   function initDeleteAccount(session) {
-    var trigger        = document.querySelector('[wized="delete-account-trigger"]');
+    var trigger        = document.querySelector('[wized="billing-delete-trigger"]');
     var panel          = document.querySelector('[wized="delete-account-panel"]');
     var step1          = document.querySelector('[wized="delete-account-step-1"]');
     var step2          = document.querySelector('[wized="delete-account-step-2"]');
@@ -329,10 +356,12 @@ window.addEventListener('load', async function() {
       var recipesPanel = document.querySelector('[wized="panel-content-recipes"]');
       var statsPanel   = document.querySelector('[wized="panel-content-stats"]');
       var quizzesPanel = document.querySelector('[wized="panel-content-quizzes"]');
+      var billingPanel = document.querySelector('[wized="panel-content-billing"]');
       if (aboutPanel)   aboutPanel.style.setProperty('display', 'none', 'important');
       if (recipesPanel) recipesPanel.style.setProperty('display', 'none', 'important');
       if (statsPanel)   statsPanel.style.setProperty('display', 'none', 'important');
       if (quizzesPanel) quizzesPanel.style.setProperty('display', 'none', 'important');
+      if (billingPanel) billingPanel.style.setProperty('display', 'none', 'important');
       panel.style.setProperty('display', 'block', 'important');
       if (step1) step1.style.setProperty('display', 'flex', 'important');
       if (step2) step2.style.setProperty('display', 'none', 'important');
@@ -351,20 +380,14 @@ window.addEventListener('load', async function() {
       _collectedReasons   = null;
       _collectedOtherText = null;
 
-      var aboutPanel = document.querySelector('[wized="panel-content-about"]');
-      if (aboutPanel) aboutPanel.style.setProperty('display', 'block', 'important');
+      var billingPanel = document.querySelector('[wized="panel-content-billing"]');
+      if (billingPanel) billingPanel.style.setProperty('display', 'flex', 'important');
 
-      if (trigger) {
-        trigger.checked = false;
-        var triggerPrev = trigger.previousElementSibling;
-        if (triggerPrev) triggerPrev.classList.remove('w--redirected-checked');
-      }
-
-      var aboutTab = document.querySelector('[wized="panel-tab-about"]');
-      if (aboutTab) {
-        aboutTab.checked = true;
-        var aboutPrev = aboutTab.previousElementSibling;
-        if (aboutPrev) aboutPrev.classList.add('w--redirected-checked');
+      var accountTab = document.querySelector('[wized="panel-tab-account"]');
+      if (accountTab) {
+        accountTab.checked = true;
+        var accountPrev = accountTab.previousElementSibling;
+        if (accountPrev) accountPrev.classList.add('w--redirected-checked');
       }
     }
 
@@ -648,10 +671,11 @@ window.addEventListener('load', async function() {
 
   function initPanelTabs() {
     var tabs = [
-      { tab: 'panel-tab-about',   content: 'panel-content-about'   },
-      { tab: 'panel-tab-recipes', content: 'panel-content-recipes' },
-      { tab: 'panel-tab-stats',   content: 'panel-content-stats'   },
-      { tab: 'panel-tab-quizzes', content: 'panel-content-quizzes' },
+      { tab: 'panel-tab-about',   content: 'panel-content-about',   display: 'block' },
+      { tab: 'panel-tab-recipes', content: 'panel-content-recipes', display: 'block' },
+      { tab: 'panel-tab-stats',   content: 'panel-content-stats',   display: 'block' },
+      { tab: 'panel-tab-quizzes', content: 'panel-content-quizzes', display: 'block' },
+      { tab: 'panel-tab-account', content: 'panel-content-billing', display: 'flex'  },
     ];
     function showTab(activeContentAttr) {
       tabs.forEach(function(t) {
@@ -659,7 +683,7 @@ window.addEventListener('load', async function() {
         var tabEl = document.querySelector('[wized="' + t.tab + '"]');
         var customCheck = tabEl ? tabEl.previousElementSibling : null;
         if (el) {
-          el.style.setProperty('display', t.content === activeContentAttr ? 'block' : 'none', 'important');
+          el.style.setProperty('display', t.content === activeContentAttr ? t.display : 'none', 'important');
         }
         if (customCheck && customCheck.classList.contains('w-radio-input')) {
           if (t.content === activeContentAttr) customCheck.classList.add('w--redirected-checked');
@@ -1854,6 +1878,7 @@ window.addEventListener('load', async function() {
 
     initAboutSection(profile, session.user.id);
     initAvatarModal(profile, session.user.id);
+    initBillingSection(profile);
     initDeleteAccount(session);
     initPanelTabs();
     initBulkActions(session.user.id);
