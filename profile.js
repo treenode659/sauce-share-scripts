@@ -697,11 +697,9 @@ window.addEventListener('load', async function() {
     var currentEmail    = session.user.email;
     var currentUsername = profile.username || '';
 
-    // --- Populate displays and pre-fill inputs ---
+    // --- Populate displays ---
     if (usernameDisplay) usernameDisplay.textContent = currentUsername;
     if (emailDisplay)    emailDisplay.textContent    = currentEmail;
-    if (usernameInput)   usernameInput.value         = currentUsername;
-    if (emailInput)      emailInput.value            = currentEmail;
 
     // --- Hide all message wrappers and inner elements initially ---
     [usernameMessage, emailMessage, passwordMessage].forEach(function(el) {
