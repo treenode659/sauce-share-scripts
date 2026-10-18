@@ -744,7 +744,7 @@ window.addEventListener('load', async function() {
     if (usernameBtn) {
       usernameBtn.addEventListener('click', async function() {
         clearMsgs(usernameMessage, usernameSuccess, usernameError);
-        var newUsername = usernameInput ? usernameInput.value.trim() : '';
+        var newUsername = usernameInput ? usernameInput.value.trim().replace(/<[^>]*>/g, '') : '';
 
         if (!newUsername) {
           showMsg(usernameMessage, usernameError, 'Please enter a username.', 'error'); return;
