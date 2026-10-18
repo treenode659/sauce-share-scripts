@@ -669,13 +669,229 @@ window.addEventListener('load', async function() {
     }
   }
 
+  function initAccountSection(session, profile) {
+    // --- Element refs ---
+    var usernameDisplay = document.querySelector('[wized="account-username-display"]');
+    var emailDisplay    = document.querySelector('[wized="account-email-display"]');
+
+    var usernameInput   = document.querySelector('[wized="account-username-input"]');
+    var usernameBtn     = document.querySelector('[wized="account-username-btn"]');
+    var usernameSuccess = document.querySelector('[wized="account-username-success"]');
+    var usernameError   = document.querySelector('[wized="account-username-error"]');
+
+    var emailInput      = document.querySelector('[wized="account-email-input"]');
+    var emailBtn        = document.querySelector('[wized="account-email-btn"]');
+    var emailSuccess    = document.querySelector('[wized="account-email-success"]');
+    var emailError      = document.querySelector('[wized="account-email-error"]');
+
+    var currentPwInput  = document.querySelector('[wized="account-current-password-input"]');
+    var newPwInput      = document.querySelector('[wized="account-new-password-input"]');
+    var confirmPwInput  = document.querySelector('[wized="account-confirm-password-input"]');
+    var passwordBtn     = document.querySelector('[wized="account-password-btn"]');
+    var passwordSuccess = document.querySelector('[wized="account-password-success"]');
+    var passwordError   = document.querySelector('[wized="account-password-error"]');
+
+    var currentEmail    = session.user.email;
+    var currentUsername = profile.username || '';
+
+    // --- Populate displays and pre-fill inputs ---
+    if (usernameDisplay) usernameDisplay.textContent = currentUsername;
+    if (emailDisplay)    emailDisplay.textContent    = currentEmail;
+    if (usernameInput)   usernameInput.value         = currentUsername;
+    if (emailInput)      emailInput.value            = currentEmail;
+
+    // --- Hide all message elements initially ---
+    [usernameSuccess, usernameError, emailSuccess, emailError, passwordSuccess, passwordError].forEach(function(el) {
+      if (el) el.style.setProperty('display', 'none', 'important');
+    });
+
+    // --- Shared helpers ---
+    function showMsg(el, msg, type) {
+      if (!el) return;
+      el.textContent = msg;
+      el.style.setProperty('display', 'block', 'important');
+      if (type === 'success') {
+        setTimeout(function() { el.style.setProperty('display', 'none', 'important'); }, 4000);
+      }
+    }
+    function clearMsgs(successEl, errorEl) {
+      if (successEl) successEl.style.setProperty('display', 'none', 'important');
+      if (errorEl)   errorEl.style.setProperty('display', 'none', 'important');
+    }
+    function setLoading(btn, loading) {
+      if (!btn) return;
+      btn.style.opacity       = loading ? '0.5' : '';
+      btn.style.pointerEvents = loading ? 'none' : '';
+    }
+    function isValidEmail(val) {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+    }
+    function isValidUsername(val) {
+      // 3–30 chars, letters / numbers / underscores only
+      return /^[a-zA-Z0-9_]{3,30}$/.test(val);
+    }
+
+    // --- Username update ---
+    if (usernameBtn) {
+      usernameBtn.addEventListener('click', async function() {
+        clearMsgs(usernameSuccess, usernameError);
+        var newUsername = usernameInput ? usernameInput.value.trim() : '';
+
+        if (!newUsername) {
+          showMsg(usernameError, 'Please enter a username.', 'error'); return;
+        }
+        if (!isValidUsername(newUsername)) {
+          showMsg(usernameError, 'Username must be 3–30 characters and contain only letters, numbers, or underscores.', 'error'); return;
+        }
+        if (newUsername === currentUsername) {
+          showMsg(usernameError, 'That\'s already your username.', 'error'); return;
+        }
+
+        setLoading(usernameBtn, true);
+        try {
+          // Check for uniqueness before writing
+          var { data: existing } = await _supabase
+            .from('profiles')
+            .select('id')
+            .eq('username', newUsername)
+            .maybeSingle();
+
+          if (existing) {
+            showMsg(usernameError, 'That username is already taken.', 'error');
+            setLoading(usernameBtn, false);
+            return;
+          }
+
+          var { error: updateError } = await _supabase
+            .from('profiles')
+            .update({ username: newUsername })
+            .eq('id', session.user.id);
+
+          if (updateError) {
+            showMsg(usernameError, 'Could not update username. Please try again.', 'error');
+          } else {
+            currentUsername = newUsername;
+            if (usernameDisplay) usernameDisplay.textContent = newUsername;
+            // Also update the @username shown in the profile header
+            if (usernameEl) usernameEl.textContent = '@' + newUsername;
+            if (window._sauceProfile) window._sauceProfile.username = newUsername;
+            showMsg(usernameSuccess, 'Username updated!', 'success');
+          }
+        } catch(err) {
+          showMsg(usernameError, 'Something went wrong. Please try again.', 'error');
+        } finally {
+          setLoading(usernameBtn, false);
+        }
+      });
+    }
+
+    // --- Email update ---
+    if (emailBtn) {
+      emailBtn.addEventListener('click', async function() {
+        clearMsgs(emailSuccess, emailError);
+        var newEmail = emailInput ? emailInput.value.trim() : '';
+
+        if (!newEmail) {
+          showMsg(emailError, 'Please enter an email address.', 'error'); return;
+        }
+        if (!isValidEmail(newEmail)) {
+          showMsg(emailError, 'Please enter a valid email address.', 'error'); return;
+        }
+        if (newEmail === currentEmail) {
+          showMsg(emailError, 'That\'s already your email address.', 'error'); return;
+        }
+
+        setLoading(emailBtn, true);
+        try {
+          var { error: updateError } = await _supabase.auth.updateUser({ email: newEmail });
+
+          if (updateError) {
+            var msg = (updateError.message || '').toLowerCase();
+            if (msg.includes('already registered') || msg.includes('already been registered') || msg.includes('already in use')) {
+              showMsg(emailError, 'That email address is already associated with another account.', 'error');
+            } else {
+              showMsg(emailError, 'Could not update email. Please try again.', 'error');
+            }
+          } else {
+            // Email change is pending — not live until the user clicks the link sent to the new address
+            showMsg(emailSuccess, 'Confirmation sent to ' + newEmail + '. Click the link in that inbox to complete the change.', 'success');
+            // Reset the input back to the current (still-active) email
+            if (emailInput) emailInput.value = currentEmail;
+          }
+        } catch(err) {
+          showMsg(emailError, 'Something went wrong. Please try again.', 'error');
+        } finally {
+          setLoading(emailBtn, false);
+        }
+      });
+    }
+
+    // --- Password update ---
+    if (passwordBtn) {
+      passwordBtn.addEventListener('click', async function() {
+        clearMsgs(passwordSuccess, passwordError);
+        var currentPw = currentPwInput  ? currentPwInput.value  : '';
+        var newPw     = newPwInput      ? newPwInput.value      : '';
+        var confirmPw = confirmPwInput  ? confirmPwInput.value  : '';
+
+        if (!currentPw) {
+          showMsg(passwordError, 'Please enter your current password.', 'error'); return;
+        }
+        if (!newPw) {
+          showMsg(passwordError, 'Please enter a new password.', 'error'); return;
+        }
+        if (newPw.length < 8) {
+          showMsg(passwordError, 'New password must be at least 8 characters.', 'error'); return;
+        }
+        if (newPw !== confirmPw) {
+          showMsg(passwordError, 'Passwords don\'t match.', 'error'); return;
+        }
+        if (newPw === currentPw) {
+          showMsg(passwordError, 'New password must be different from your current password.', 'error'); return;
+        }
+
+        setLoading(passwordBtn, true);
+        try {
+          // Re-authenticate first — guards against someone using an unlocked session to change the password
+          var { error: signInError } = await _supabase.auth.signInWithPassword({
+            email:    currentEmail,
+            password: currentPw
+          });
+
+          if (signInError) {
+            showMsg(passwordError, 'Current password is incorrect.', 'error');
+            setLoading(passwordBtn, false);
+            return;
+          }
+
+          // Re-auth passed — now update the password
+          var { error: updateError } = await _supabase.auth.updateUser({ password: newPw });
+
+          if (updateError) {
+            showMsg(passwordError, 'Could not update password. Please try again.', 'error');
+          } else {
+            if (currentPwInput) currentPwInput.value = '';
+            if (newPwInput)     newPwInput.value     = '';
+            if (confirmPwInput) confirmPwInput.value = '';
+            showMsg(passwordSuccess, 'Password updated successfully!', 'success');
+          }
+        } catch(err) {
+          showMsg(passwordError, 'Something went wrong. Please try again.', 'error');
+        } finally {
+          setLoading(passwordBtn, false);
+        }
+      });
+    }
+  }
+
   function initPanelTabs() {
     var tabs = [
       { tab: 'panel-tab-about',   content: 'panel-content-about',   display: 'block' },
       { tab: 'panel-tab-recipes', content: 'panel-content-recipes', display: 'block' },
       { tab: 'panel-tab-stats',   content: 'panel-content-stats',   display: 'block' },
       { tab: 'panel-tab-quizzes', content: 'panel-content-quizzes', display: 'block' },
-      { tab: 'panel-tab-account', content: 'panel-content-billing', display: 'flex'  },
+      { tab: 'panel-tab-account',   content: 'panel-content-billing',  display: 'flex'  },
+      { tab: 'panel-tab-settings',  content: 'panel-content-settings', display: 'block' },
     ];
     function showTab(activeContentAttr) {
       tabs.forEach(function(t) {
@@ -1880,6 +2096,7 @@ window.addEventListener('load', async function() {
     initAvatarModal(profile, session.user.id);
     initBillingSection(profile);
     initDeleteAccount(session);
+    initAccountSection(session, profile);
     initPanelTabs();
     initBulkActions(session.user.id);
     initFavoriteBulkActions(session.user.id);
