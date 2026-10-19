@@ -701,6 +701,27 @@ window.addEventListener('load', async function() {
     if (usernameDisplay) usernameDisplay.textContent = currentUsername;
     if (emailDisplay)    emailDisplay.textContent    = currentEmail;
 
+    // --- Password visibility toggles ---
+    function initPasswordToggle(toggleAttr, inputEl, openAttr, closedAttr) {
+      var toggle     = document.querySelector('[wized="' + toggleAttr + '"]');
+      var eyeOpen    = document.querySelector('[wized="' + openAttr + '"]');
+      var eyeClosed  = document.querySelector('[wized="' + closedAttr + '"]');
+      if (!toggle || !inputEl) return;
+      // Initial state: password hidden, open eye visible
+      if (eyeOpen)   eyeOpen.style.setProperty('display', 'block', 'important');
+      if (eyeClosed) eyeClosed.style.setProperty('display', 'none', 'important');
+      toggle.style.cursor = 'pointer';
+      toggle.addEventListener('click', function() {
+        var isHidden = inputEl.type === 'password';
+        inputEl.type = isHidden ? 'text' : 'password';
+        if (eyeOpen)   eyeOpen.style.setProperty('display', isHidden ? 'none'  : 'block', 'important');
+        if (eyeClosed) eyeClosed.style.setProperty('display', isHidden ? 'block' : 'none',  'important');
+      });
+    }
+    initPasswordToggle('account-current-password-toggle', currentPwInput, 'account-current-password-eye-open', 'account-current-password-eye-closed');
+    initPasswordToggle('account-new-password-toggle',     newPwInput,     'account-new-password-eye-open',     'account-new-password-eye-closed');
+    initPasswordToggle('account-confirm-password-toggle', confirmPwInput, 'account-confirm-password-eye-open', 'account-confirm-password-eye-closed');
+
     // --- Hide all message wrappers and inner elements initially ---
     [usernameMessage, emailMessage, passwordMessage].forEach(function(el) {
       if (el) el.style.setProperty('display', 'none', 'important');
