@@ -710,17 +710,11 @@ window.addEventListener('load', async function() {
     });
 
     // --- Shared helpers ---
-    function showMsg(wrapper, el, msg, type) {
+    function showMsg(wrapper, el, msg) {
       if (wrapper) wrapper.style.setProperty('display', 'block', 'important');
       if (!el) return;
       el.textContent = msg;
       el.style.setProperty('display', 'block', 'important');
-      if (type === 'success') {
-        setTimeout(function() {
-          el.style.setProperty('display', 'none', 'important');
-          if (wrapper) wrapper.style.setProperty('display', 'none', 'important');
-        }, 4000);
-      }
     }
     function clearMsgs(wrapper, successEl, errorEl) {
       if (wrapper)   wrapper.style.setProperty('display', 'none', 'important');
@@ -747,19 +741,19 @@ window.addEventListener('load', async function() {
         var newUsername = usernameInput ? usernameInput.value.trim().replace(/<[^>]*>/g, '') : '';
 
         if (!newUsername) {
-          showMsg(usernameMessage, usernameError, 'Please enter a username.', 'error'); return;
+          showMsg(usernameMessage, usernameError, 'Please enter a username.'); return;
         }
         if (!isValidUsername(newUsername)) {
-          showMsg(usernameMessage, usernameError, 'Username can only contain lowercase letters, numbers, underscores, and hyphens.', 'error'); return;
+          showMsg(usernameMessage, usernameError, 'Username can only contain lowercase letters, numbers, underscores, and hyphens.'); return;
         }
         if (newUsername.length < 5) {
-          showMsg(usernameMessage, usernameError, 'Username must be at least 5 characters.', 'error'); return;
+          showMsg(usernameMessage, usernameError, 'Username must be at least 5 characters.'); return;
         }
         if (newUsername.length > 20) {
-          showMsg(usernameMessage, usernameError, 'Username must be 20 characters or fewer.', 'error'); return;
+          showMsg(usernameMessage, usernameError, 'Username must be 20 characters or fewer.'); return;
         }
         if (newUsername === currentUsername) {
-          showMsg(usernameMessage, usernameError, 'That\'s already your username.', 'error'); return;
+          showMsg(usernameMessage, usernameError, 'That\'s already your username.'); return;
         }
 
         setLoading(usernameBtn, true);
@@ -772,7 +766,7 @@ window.addEventListener('load', async function() {
             .maybeSingle();
 
           if (existing) {
-            showMsg(usernameMessage, usernameError, 'That username is already taken.', 'error');
+            showMsg(usernameMessage, usernameError, 'That username is already taken.');
             setLoading(usernameBtn, false);
             return;
           }
@@ -783,17 +777,17 @@ window.addEventListener('load', async function() {
             .eq('id', session.user.id);
 
           if (updateError) {
-            showMsg(usernameMessage, usernameError, 'Could not update username. Please try again.', 'error');
+            showMsg(usernameMessage, usernameError, 'Could not update username. Please try again.');
           } else {
             currentUsername = newUsername;
             if (usernameDisplay) usernameDisplay.textContent = newUsername;
             // Also update the @username shown in the profile header
             if (usernameEl) usernameEl.textContent = '@' + newUsername;
             if (window._sauceProfile) window._sauceProfile.username = newUsername;
-            showMsg(usernameMessage, usernameSuccess, 'Username updated!', 'success');
+            showMsg(usernameMessage, usernameSuccess, 'Username updated!');
           }
         } catch(err) {
-          showMsg(usernameMessage, usernameError, 'Something went wrong. Please try again.', 'error');
+          showMsg(usernameMessage, usernameError, 'Something went wrong. Please try again.');
         } finally {
           setLoading(usernameBtn, false);
         }
@@ -807,13 +801,13 @@ window.addEventListener('load', async function() {
         var newEmail = emailInput ? emailInput.value.trim() : '';
 
         if (!newEmail) {
-          showMsg(emailMessage, emailError, 'Please enter an email address.', 'error'); return;
+          showMsg(emailMessage, emailError, 'Please enter an email address.'); return;
         }
         if (!isValidEmail(newEmail)) {
-          showMsg(emailMessage, emailError, 'Please enter a valid email address.', 'error'); return;
+          showMsg(emailMessage, emailError, 'Please enter a valid email address.'); return;
         }
         if (newEmail === currentEmail) {
-          showMsg(emailMessage, emailError, 'That\'s already your email address.', 'error'); return;
+          showMsg(emailMessage, emailError, 'That\'s already your email address.'); return;
         }
 
         setLoading(emailBtn, true);
@@ -823,18 +817,18 @@ window.addEventListener('load', async function() {
           if (updateError) {
             var msg = (updateError.message || '').toLowerCase();
             if (msg.includes('already registered') || msg.includes('already been registered') || msg.includes('already in use')) {
-              showMsg(emailMessage, emailError, 'That email address is already associated with another account.', 'error');
+              showMsg(emailMessage, emailError, 'That email address is already associated with another account.');
             } else {
-              showMsg(emailMessage, emailError, 'Could not update email. Please try again.', 'error');
+              showMsg(emailMessage, emailError, 'Could not update email. Please try again.');
             }
           } else {
             // Email change is pending — not live until the user clicks the link sent to the new address
-            showMsg(emailMessage, emailSuccess, 'Confirmation sent to ' + newEmail + '. Click the link in that inbox to complete the change.', 'success');
+            showMsg(emailMessage, emailSuccess, 'Confirmation sent to ' + newEmail + '. Click the link in that inbox to complete the change.');
             // Reset the input back to the current (still-active) email
             if (emailInput) emailInput.value = currentEmail;
           }
         } catch(err) {
-          showMsg(emailMessage, emailError, 'Something went wrong. Please try again.', 'error');
+          showMsg(emailMessage, emailError, 'Something went wrong. Please try again.');
         } finally {
           setLoading(emailBtn, false);
         }
@@ -850,22 +844,22 @@ window.addEventListener('load', async function() {
         var confirmPw = confirmPwInput  ? confirmPwInput.value.trim()  : '';
 
         if (!currentPw) {
-          showMsg(passwordMessage, passwordError, 'Please enter your current password.', 'error'); return;
+          showMsg(passwordMessage, passwordError, 'Please enter your current password.'); return;
         }
         if (!newPw) {
-          showMsg(passwordMessage, passwordError, 'Please enter a new password.', 'error'); return;
+          showMsg(passwordMessage, passwordError, 'Please enter a new password.'); return;
         }
         if (newPw.length < 8) {
-          showMsg(passwordMessage, passwordError, 'Password must be at least 8 characters.', 'error'); return;
+          showMsg(passwordMessage, passwordError, 'Password must be at least 8 characters.'); return;
         }
         if (newPw.length > 72) {
-          showMsg(passwordMessage, passwordError, 'Password must be 72 characters or fewer.', 'error'); return;
+          showMsg(passwordMessage, passwordError, 'Password must be 72 characters or fewer.'); return;
         }
         if (newPw !== confirmPw) {
-          showMsg(passwordMessage, passwordError, 'Passwords don\'t match.', 'error'); return;
+          showMsg(passwordMessage, passwordError, 'Passwords don\'t match.'); return;
         }
         if (newPw === currentPw) {
-          showMsg(passwordMessage, passwordError, 'New password must be different from your current password.', 'error'); return;
+          showMsg(passwordMessage, passwordError, 'New password must be different from your current password.'); return;
         }
 
         setLoading(passwordBtn, true);
@@ -877,7 +871,7 @@ window.addEventListener('load', async function() {
           });
 
           if (signInError) {
-            showMsg(passwordMessage, passwordError, 'Current password is incorrect.', 'error');
+            showMsg(passwordMessage, passwordError, 'Current password is incorrect.');
             setLoading(passwordBtn, false);
             return;
           }
@@ -886,15 +880,15 @@ window.addEventListener('load', async function() {
           var { error: updateError } = await _supabase.auth.updateUser({ password: newPw });
 
           if (updateError) {
-            showMsg(passwordMessage, passwordError, 'Could not update password. Please try again.', 'error');
+            showMsg(passwordMessage, passwordError, 'Could not update password. Please try again.');
           } else {
             if (currentPwInput) currentPwInput.value = '';
             if (newPwInput)     newPwInput.value     = '';
             if (confirmPwInput) confirmPwInput.value = '';
-            showMsg(passwordMessage, passwordSuccess, 'Password updated successfully!', 'success');
+            showMsg(passwordMessage, passwordSuccess, 'Password updated successfully!');
           }
         } catch(err) {
-          showMsg(passwordMessage, passwordError, 'Something went wrong. Please try again.', 'error');
+          showMsg(passwordMessage, passwordError, 'Something went wrong. Please try again.');
         } finally {
           setLoading(passwordBtn, false);
         }
