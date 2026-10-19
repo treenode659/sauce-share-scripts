@@ -839,9 +839,9 @@ window.addEventListener('load', async function() {
     if (passwordBtn) {
       passwordBtn.addEventListener('click', async function() {
         clearMsgs(passwordMessage, passwordSuccess, passwordError);
-        var currentPw = currentPwInput  ? currentPwInput.value  : '';
-        var newPw     = newPwInput      ? newPwInput.value      : '';
-        var confirmPw = confirmPwInput  ? confirmPwInput.value  : '';
+        var currentPw = currentPwInput  ? currentPwInput.value.trim()  : '';
+        var newPw     = newPwInput      ? newPwInput.value.trim()      : '';
+        var confirmPw = confirmPwInput  ? confirmPwInput.value.trim()  : '';
 
         if (!currentPw) {
           showMsg(passwordMessage, passwordError, 'Please enter your current password.', 'error'); return;
