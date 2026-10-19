@@ -736,8 +736,8 @@ window.addEventListener('load', async function() {
       return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
     }
     function isValidUsername(val) {
-      // 3–30 chars, letters / numbers / underscores only
-      return /^[a-zA-Z0-9_]{3,30}$/.test(val);
+      // 5–20 chars, lowercase letters / numbers / underscores / hyphens only (matches signup rules)
+      return /^[a-z0-9_-]{5,20}$/.test(val);
     }
 
     // --- Username update ---
@@ -750,7 +750,13 @@ window.addEventListener('load', async function() {
           showMsg(usernameMessage, usernameError, 'Please enter a username.', 'error'); return;
         }
         if (!isValidUsername(newUsername)) {
-          showMsg(usernameMessage, usernameError, 'Username must be 3–30 characters and contain only letters, numbers, or underscores.', 'error'); return;
+          showMsg(usernameMessage, usernameError, 'Username can only contain lowercase letters, numbers, underscores, and hyphens.', 'error'); return;
+        }
+        if (newUsername.length < 5) {
+          showMsg(usernameMessage, usernameError, 'Username must be at least 5 characters.', 'error'); return;
+        }
+        if (newUsername.length > 20) {
+          showMsg(usernameMessage, usernameError, 'Username must be 20 characters or fewer.', 'error'); return;
         }
         if (newUsername === currentUsername) {
           showMsg(usernameMessage, usernameError, 'That\'s already your username.', 'error'); return;
@@ -850,7 +856,10 @@ window.addEventListener('load', async function() {
           showMsg(passwordMessage, passwordError, 'Please enter a new password.', 'error'); return;
         }
         if (newPw.length < 8) {
-          showMsg(passwordMessage, passwordError, 'New password must be at least 8 characters.', 'error'); return;
+          showMsg(passwordMessage, passwordError, 'Password must be at least 8 characters.', 'error'); return;
+        }
+        if (newPw.length > 72) {
+          showMsg(passwordMessage, passwordError, 'Password must be 72 characters or fewer.', 'error'); return;
         }
         if (newPw !== confirmPw) {
           showMsg(passwordMessage, passwordError, 'Passwords don\'t match.', 'error'); return;
