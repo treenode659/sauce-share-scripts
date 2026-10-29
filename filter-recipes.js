@@ -821,7 +821,7 @@ window.addEventListener('load', function() {
                     var msg;
                     if (response.status === 429)      msg = 'Daily upload limit reached. Try again tomorrow.';
                     else if (response.status === 401) msg = 'Session expired. Please refresh the page.';
-                    else if (serverError.toLowerCase().includes('too large'))                               msg = 'File is too large. Maximum 5MB.';
+                    else if (serverError.toLowerCase().includes('too large')) msg = 'File is too large. Maximum 5MB.';
                     else if (serverError.toLowerCase().includes('file type') || serverError.toLowerCase().includes('invalid')) msg = 'Invalid file type. JPG, PNG, and WEBP only.';
                     else msg = serverError || 'Upload failed. Please try again.';
                     if (statusEl) { statusEl.textContent = msg; statusEl.style.color = '#ff4d4d'; }
@@ -1075,6 +1075,15 @@ window.addEventListener('load', function() {
         customCheck.classList.remove('w--redirected-checked');
       }
       showFilterCardToast('Log in or become a member to filter by your recipes, favorites, and notes.');
+      setEmptyStates(true, false);
+      if (window.Wized && Wized.data && Wized.data.v) {
+        Wized.data.v.no_results     = false;
+        Wized.data.v.recipe_results = [];
+        Wized.data.v.total_pages    = 1;
+        Wized.data.v.current_page   = 1;
+      }
+      _filterCardResults = [];
+      updatePaginationUI();
       return;
     }
 
