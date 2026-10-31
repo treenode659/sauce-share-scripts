@@ -1,4 +1,24 @@
 // ============================================
+// CUISINE DROPDOWN TOGGLE
+// ============================================
+document.addEventListener('click', function(e) {
+  var trigger = e.target.closest('.filter-trigger');
+  if (!trigger) return;
+  var filterList = trigger.closest('.form-field_dropdown')
+                          ?.querySelector('.filter-list_cuisine');
+  if (!filterList) return;
+  var isHidden = getComputedStyle(filterList).display === 'none';
+  if (isHidden) {
+    filterList.style.display = 'flex';
+    filterList.style.opacity = '0';
+    requestAnimationFrame(function() { requestAnimationFrame(function() { filterList.style.opacity = '1'; }); });
+  } else {
+    filterList.style.opacity = '0';
+    setTimeout(function() { filterList.style.display = 'none'; }, 250);
+  }
+});
+
+// ============================================
 // FILTER TOGGLE (open/close dropdowns)
 // ============================================
 document.addEventListener("DOMContentLoaded", function() {
@@ -235,7 +255,6 @@ document.addEventListener("DOMContentLoaded", function() {
       var raw = input.value;
       var len;
       var qlEditor = (input.closest('.form-field_control') || input.parentElement || document).querySelector('.ql-editor');
-
       if (qlEditor) {
         len = (qlEditor.textContent || qlEditor.innerText || '').trim().length;
       } else if (isList) {
@@ -246,7 +265,6 @@ document.addEventListener("DOMContentLoaded", function() {
       } else {
         len = raw.trim().length;
       }
-
       if (!counter) return;
       if (min > 0 && len < min && len > 0) {
         counter.innerText = 'Needs min ' + min + ' characters';
@@ -1057,7 +1075,6 @@ window.addEventListener('load', function() {
   var _triedOnMap        = {};
   var _recipesPerPage    = 6;
 
-  // ── Toast for logged-out filter card intercept ───────────────────────────
   function showFilterCardToast(message) {
     var existing = document.getElementById('fc-filter-toast');
     if (existing) existing.remove();
@@ -1377,7 +1394,6 @@ window.addEventListener('load', function() {
     window._filterCardSession = _session;
 
     if (!_session) {
-      // Uncheck the checkbox visually and fire immediate toast
       e.target.checked = false;
       var customCheck = e.target.previousElementSibling;
       if (customCheck && customCheck.classList.contains('w-checkbox-input')) {
@@ -1385,7 +1401,6 @@ window.addEventListener('load', function() {
       }
       showFilterCardToast('Log in or become a member to filter by your recipes, favorites, and notes.');
 
-      // Original logged-out behavior preserved
       setEmptyStates(true, false);
       if (window.Wized && Wized.data && Wized.data.v) {
         Wized.data.v.no_results     = false;
