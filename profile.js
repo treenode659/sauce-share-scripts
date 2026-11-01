@@ -337,7 +337,6 @@ window.addEventListener('load', async function() {
     var _collectedReasons   = null;
     var _collectedOtherText = null;
 
-    // Hide everything on init
     panel.style.setProperty('display', 'none', 'important');
     if (step2)          step2.style.setProperty('display', 'none', 'important');
     if (step3)          step3.style.setProperty('display', 'none', 'important');
@@ -406,7 +405,6 @@ window.addEventListener('load', async function() {
       });
     }
 
-    // "Something else" checkbox — show/hide input wrapper
     if (otherCheckbox) {
       otherCheckbox.addEventListener('change', function() {
         if (otherCheckbox.checked) {
@@ -419,7 +417,6 @@ window.addEventListener('load', async function() {
       });
     }
 
-    // Character counter
     if (otherText && charCount) {
       otherText.addEventListener('input', function() {
         var len = otherText.value.length;
@@ -442,23 +439,18 @@ window.addEventListener('load', async function() {
       return reasons;
     }
 
-    // Step 2 Submit → collect feedback + advance to step 3
     if (submitBtn) {
       submitBtn.addEventListener('click', function() {
         _collectedReasons = collectReasons();
-
-        // Sanitize other text — strip HTML tags before storing
         var _rawOtherText = (otherText && otherCheckbox && otherCheckbox.checked)
           ? (otherText.value || '').trim()
           : null;
         _collectedOtherText = _rawOtherText ? _rawOtherText.replace(/<[^>]*>/g, '') : null;
-
         if (step2) step2.style.setProperty('display', 'none', 'important');
         if (step3) step3.style.setProperty('display', 'flex', 'important');
       });
     }
 
-    // Step 2 Skip → clear feedback + advance to step 3
     if (skipBtn) {
       skipBtn.addEventListener('click', function() {
         _collectedReasons   = null;
@@ -468,7 +460,6 @@ window.addEventListener('load', async function() {
       });
     }
 
-    // Step 3 Delete Account
     if (confirmBtn) {
       confirmBtn.addEventListener('click', async function() {
         showLoadingSection();
@@ -670,7 +661,6 @@ window.addEventListener('load', async function() {
   }
 
   function initAccountSection(session, profile) {
-    // --- Element refs ---
     var usernameDisplay = document.querySelector('[wized="account-username-display"]');
     var emailDisplay    = document.querySelector('[wized="account-email-display"]');
 
@@ -697,17 +687,14 @@ window.addEventListener('load', async function() {
     var currentEmail    = session.user.email;
     var currentUsername = profile.username || '';
 
-    // --- Populate displays ---
     if (usernameDisplay) usernameDisplay.textContent = currentUsername;
     if (emailDisplay)    emailDisplay.textContent    = currentEmail;
 
-    // --- Password visibility toggles ---
     function initPasswordToggle(toggleAttr, inputEl, openAttr, closedAttr) {
       var toggle     = document.querySelector('[wized="' + toggleAttr + '"]');
       var eyeOpen    = document.querySelector('[wized="' + openAttr + '"]');
       var eyeClosed  = document.querySelector('[wized="' + closedAttr + '"]');
       if (!toggle || !inputEl) return;
-      // Initial state: password hidden, open eye visible
       if (eyeOpen)   eyeOpen.style.setProperty('display', 'block', 'important');
       if (eyeClosed) eyeClosed.style.setProperty('display', 'none', 'important');
       toggle.style.cursor = 'pointer';
@@ -722,7 +709,6 @@ window.addEventListener('load', async function() {
     initPasswordToggle('account-new-password-toggle',     newPwInput,     'account-new-password-eye-open',     'account-new-password-eye-closed');
     initPasswordToggle('account-confirm-password-toggle', confirmPwInput, 'account-confirm-password-eye-open', 'account-confirm-password-eye-closed');
 
-    // --- Hide all message wrappers and inner elements initially ---
     [usernameMessage, emailMessage, passwordMessage].forEach(function(el) {
       if (el) el.style.setProperty('display', 'none', 'important');
     });
@@ -730,7 +716,6 @@ window.addEventListener('load', async function() {
       if (el) el.style.setProperty('display', 'none', 'important');
     });
 
-    // --- Shared helpers ---
     function showMsg(wrapper, el, msg) {
       if (wrapper) wrapper.style.setProperty('display', 'block', 'important');
       if (!el) return;
@@ -751,11 +736,9 @@ window.addEventListener('load', async function() {
       return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
     }
     function isValidUsername(val) {
-      // 5–20 chars, lowercase letters / numbers / underscores / hyphens only (matches signup rules)
       return /^[a-z0-9_-]{5,20}$/.test(val);
     }
 
-    // --- Username update ---
     if (usernameBtn) {
       usernameBtn.addEventListener('click', async function() {
         clearMsgs(usernameMessage, usernameSuccess, usernameError);
@@ -779,7 +762,6 @@ window.addEventListener('load', async function() {
 
         setLoading(usernameBtn, true);
         try {
-          // Check for uniqueness before writing
           var { data: existing } = await _supabase
             .from('profiles')
             .select('id')
@@ -802,7 +784,6 @@ window.addEventListener('load', async function() {
           } else {
             currentUsername = newUsername;
             if (usernameDisplay) usernameDisplay.textContent = newUsername;
-            // Also update the @username shown in the profile header
             if (usernameEl) usernameEl.textContent = '@' + newUsername;
             if (window._sauceProfile) window._sauceProfile.username = newUsername;
             showMsg(usernameMessage, usernameSuccess, 'Username updated!');
@@ -815,7 +796,6 @@ window.addEventListener('load', async function() {
       });
     }
 
-    // --- Email update ---
     if (emailBtn) {
       emailBtn.addEventListener('click', async function() {
         clearMsgs(emailMessage, emailSuccess, emailError);
@@ -843,9 +823,7 @@ window.addEventListener('load', async function() {
               showMsg(emailMessage, emailError, 'Could not update email. Please try again.');
             }
           } else {
-            // Email change is pending — not live until the user clicks the link sent to the new address
             showMsg(emailMessage, emailSuccess, 'Confirmation sent to ' + newEmail + '. Click the link in that inbox to complete the change.');
-            // Reset the input back to the current (still-active) email
             if (emailInput) emailInput.value = currentEmail;
           }
         } catch(err) {
@@ -856,7 +834,6 @@ window.addEventListener('load', async function() {
       });
     }
 
-    // --- Password update ---
     if (passwordBtn) {
       passwordBtn.addEventListener('click', async function() {
         clearMsgs(passwordMessage, passwordSuccess, passwordError);
@@ -885,7 +862,6 @@ window.addEventListener('load', async function() {
 
         setLoading(passwordBtn, true);
         try {
-          // Re-authenticate first — guards against someone using an unlocked session to change the password
           var { error: signInError } = await _supabase.auth.signInWithPassword({
             email:    currentEmail,
             password: currentPw
@@ -897,7 +873,6 @@ window.addEventListener('load', async function() {
             return;
           }
 
-          // Re-auth passed — now update the password
           var { error: updateError } = await _supabase.auth.updateUser({ password: newPw });
 
           if (updateError) {
@@ -917,14 +892,34 @@ window.addEventListener('load', async function() {
     }
   }
 
+  // ── Log Out section ───────────────────────────────────────────────────────
+  function initLogoutSection() {
+    var logoutBtn = document.querySelector('[wized="profile-logout-btn"]');
+    if (!logoutBtn) return;
+
+    logoutBtn.addEventListener('click', async function() {
+      logoutBtn.style.opacity = '0.5';
+      logoutBtn.style.pointerEvents = 'none';
+      try {
+        await _supabase.auth.signOut();
+        window.location.href = '/';
+      } catch(err) {
+        logoutBtn.style.opacity = '';
+        logoutBtn.style.pointerEvents = '';
+        alert('Something went wrong. Please try again.');
+      }
+    });
+  }
+
   function initPanelTabs() {
     var tabs = [
-      { tab: 'panel-tab-about',   content: 'panel-content-about',   display: 'block' },
-      { tab: 'panel-tab-recipes', content: 'panel-content-recipes', display: 'block' },
-      { tab: 'panel-tab-stats',   content: 'panel-content-stats',   display: 'block' },
-      { tab: 'panel-tab-quizzes', content: 'panel-content-quizzes', display: 'block' },
-      { tab: 'panel-tab-account',   content: 'panel-content-billing',  display: 'flex'  },
-      { tab: 'panel-tab-settings',  content: 'panel-content-settings', display: 'block' },
+      { tab: 'panel-tab-about',    content: 'panel-content-about',    display: 'block' },
+      { tab: 'panel-tab-recipes',  content: 'panel-content-recipes',  display: 'block' },
+      { tab: 'panel-tab-stats',    content: 'panel-content-stats',    display: 'block' },
+      { tab: 'panel-tab-quizzes',  content: 'panel-content-quizzes',  display: 'block' },
+      { tab: 'panel-tab-account',  content: 'panel-content-billing',  display: 'flex'  },
+      { tab: 'panel-tab-settings', content: 'panel-content-settings', display: 'block' },
+      { tab: 'panel-tab-logout',   content: 'panel-content-logout',   display: 'block' },
     ];
     function showTab(activeContentAttr) {
       tabs.forEach(function(t) {
@@ -2130,6 +2125,7 @@ window.addEventListener('load', async function() {
     initBillingSection(profile);
     initDeleteAccount(session);
     initAccountSection(session, profile);
+    initLogoutSection();
     initPanelTabs();
     initBulkActions(session.user.id);
     initFavoriteBulkActions(session.user.id);
