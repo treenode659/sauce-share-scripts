@@ -355,12 +355,14 @@ window.addEventListener('load', async function() {
       var recipesPanel = document.querySelector('[wized="panel-content-recipes"]');
       var statsPanel   = document.querySelector('[wized="panel-content-stats"]');
       var quizzesPanel = document.querySelector('[wized="panel-content-quizzes"]');
-      var billingPanel = document.querySelector('[wized="panel-content-billing"]');
-      if (aboutPanel)   aboutPanel.style.setProperty('display', 'none', 'important');
-      if (recipesPanel) recipesPanel.style.setProperty('display', 'none', 'important');
-      if (statsPanel)   statsPanel.style.setProperty('display', 'none', 'important');
-      if (quizzesPanel) quizzesPanel.style.setProperty('display', 'none', 'important');
-      if (billingPanel) billingPanel.style.setProperty('display', 'none', 'important');
+      var billingPanel  = document.querySelector('[wized="panel-content-billing"]');
+      var settingsPanel = document.querySelector('[wized="panel-content-settings"]');
+      if (aboutPanel)    aboutPanel.style.setProperty('display', 'none', 'important');
+      if (recipesPanel)  recipesPanel.style.setProperty('display', 'none', 'important');
+      if (statsPanel)    statsPanel.style.setProperty('display', 'none', 'important');
+      if (quizzesPanel)  quizzesPanel.style.setProperty('display', 'none', 'important');
+      if (billingPanel)  billingPanel.style.setProperty('display', 'none', 'important');
+      if (settingsPanel) settingsPanel.style.setProperty('display', 'none', 'important');
       panel.style.setProperty('display', 'block', 'important');
       if (step1) step1.style.setProperty('display', 'flex', 'important');
       if (step2) step2.style.setProperty('display', 'none', 'important');
@@ -379,14 +381,14 @@ window.addEventListener('load', async function() {
       _collectedReasons   = null;
       _collectedOtherText = null;
 
-      var billingPanel = document.querySelector('[wized="panel-content-billing"]');
-      if (billingPanel) billingPanel.style.setProperty('display', 'flex', 'important');
+      var settingsPanel = document.querySelector('[wized="panel-content-settings"]');
+      if (settingsPanel) settingsPanel.style.setProperty('display', 'block', 'important');
 
-      var accountTab = document.querySelector('[wized="panel-tab-account"]');
-      if (accountTab) {
-        accountTab.checked = true;
-        var accountPrev = accountTab.previousElementSibling;
-        if (accountPrev) accountPrev.classList.add('w--redirected-checked');
+      var settingsTab = document.querySelector('[wized="panel-tab-settings"]');
+      if (settingsTab) {
+        settingsTab.checked = true;
+        var settingsPrev = settingsTab.previousElementSibling;
+        if (settingsPrev) settingsPrev.classList.add('w--redirected-checked');
       }
     }
 
