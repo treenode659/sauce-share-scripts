@@ -229,10 +229,8 @@ window.addEventListener('load', function() {
     if (img._svgWatching) return;
     img._svgWatching = true;
     var attrObs = new MutationObserver(function() {
-      // Disconnect before changing src to avoid infinite loop
       attrObs.disconnect();
       swapIfWebp(img);
-      // Reconnect after a short delay so we catch any further Wized re-renders
       setTimeout(function() {
         attrObs.observe(img, { attributes: true, attributeFilter: ['src'] });
       }, 50);
@@ -1030,7 +1028,7 @@ window.addEventListener('load', function () {
     _authToken  = _stored ? JSON.parse(_stored).access_token : null;
   } catch(e) {}
 
-  var _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  var _supabase = window._recipeSupabase || supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
     global: { headers: { Authorization: _authToken ? 'Bearer ' + _authToken : '' } },
     auth:   { persistSession: false }
   });
@@ -1324,7 +1322,7 @@ window.addEventListener('load', function () {
 
 });
 
-window.addEventListener('load', function() {
+window.addEventListener('load', function () {
 
   var SUPABASE_URL = 'https://houohobadselkswaxwsy.supabase.co';
   var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhvdW9ob2JhZHNlbGtzd2F4d3N5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxMTM0NTIsImV4cCI6MjA4OTY4OTQ1Mn0.hOBki3aRyTqOFy3CJZmrNBBULDoRxb9xRjz8iDUEMjo';
@@ -1598,6 +1596,39 @@ window.addEventListener('load', function() {
   var _supabase = window._recipeSupabase || supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
     auth: { persistSession: false }
   });
+
+  // ── Recraft limit banner ──────────────────────────────────────────────
+  if (sessionStorage.getItem('recraft_limit_hit')) {
+    sessionStorage.removeItem('recraft_limit_hit');
+    var banner = document.createElement('div');
+    banner.textContent = "Your recipe was saved, but the header image couldn't be updated — you've reached your monthly generation limit. It will reset at the start of next month.";
+    banner.style.cssText = [
+      'position: fixed',
+      'bottom: 24px',
+      'left: 50%',
+      'transform: translateX(-50%)',
+      'background: #fff3e0',
+      'color: #7a4a00',
+      'padding: 14px 20px',
+      'border-radius: 10px',
+      'font-size: 0.875rem',
+      'max-width: 480px',
+      'width: calc(100% - 48px)',
+      'box-shadow: 0 4px 16px rgba(0,0,0,0.12)',
+      'text-align: center',
+      'z-index: 9999',
+      'opacity: 0',
+      'transition: opacity 0.3s ease'
+    ].join(';');
+    document.body.appendChild(banner);
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() { banner.style.opacity = '1'; });
+    });
+    setTimeout(function() {
+      banner.style.opacity = '0';
+      setTimeout(function() { banner.remove(); }, 300);
+    }, 7000);
+  }
 
   var checkReady = setInterval(function() {
     var recipe = window.Wized?.data?.r?.get_recipe?.data?.[0];
