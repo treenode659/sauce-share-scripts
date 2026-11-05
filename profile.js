@@ -584,32 +584,13 @@ window.addEventListener('load', async function() {
     }
   }
 
-  function initWelcomeModal(userId) {
-    var checkbox = document.querySelector('[wized="welcome-guidelines-checkbox"]');
-    var enterBtn = document.querySelector('[wized="welcome-enter-btn"]');
-    if (!modalEl) return;
-    if (window._sauceProfile && window._sauceProfile.community_guidelines_agreed_at) return;
-    showModal();
-    window.history.replaceState({}, '', window.location.pathname);
-    if (enterBtn) { enterBtn.style.opacity = '0.4'; enterBtn.style.pointerEvents = 'none'; }
-    if (checkbox) {
-      checkbox.addEventListener('change', function() {
-        if (enterBtn) {
-          enterBtn.style.opacity = checkbox.checked ? '1' : '0.4';
-          enterBtn.style.pointerEvents = checkbox.checked ? 'auto' : 'none';
-        }
-      });
-    }
-    if (enterBtn) {
-      enterBtn.addEventListener('click', async function() {
-        if (!checkbox || !checkbox.checked) return;
-        enterBtn.style.opacity = '0.5';
-        enterBtn.style.pointerEvents = 'none';
-        var now = new Date().toISOString();
-        var { error } = await _supabase.from('profiles').update({ community_guidelines_agreed_at: now }).eq('id', userId);
-        if (window._sauceProfile && !error) { window._sauceProfile.community_guidelines_agreed_at = now; }
-        hideModal();
-      });
+  async function initWelcomeModal(userId) {
+    // Welcome modal removed — community_guidelines_agreed_at is set at signup.
+    // Silently backfill for any existing accounts that don't have it yet.
+    if (window._sauceProfile && !window._sauceProfile.community_guidelines_agreed_at) {
+      var now = new Date().toISOString();
+      var { error } = await _supabase.from('profiles').update({ community_guidelines_agreed_at: now }).eq('id', userId);
+      if (window._sauceProfile && !error) { window._sauceProfile.community_guidelines_agreed_at = now; }
     }
   }
 
