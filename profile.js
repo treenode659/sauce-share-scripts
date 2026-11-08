@@ -558,7 +558,7 @@ window.addEventListener('load', async function() {
             var url = avatarMap[_selectedAvatar];
             if (avatarEl && url) {
               avatarEl.src = url;
-              avatarEl.alt = _selectedAvatar;
+              avatarEl.alt = (profile.username || 'Member') + "'s avatar";
               if (_selectedAvatar === 'chef-hat') {
                 avatarEl.style.objectFit      = 'contain';
                 avatarEl.style.objectPosition = 'center center';
@@ -2086,7 +2086,7 @@ window.addEventListener('load', async function() {
       var url = avatarMap[profile.avatar_selection];
       if (url) {
         avatarEl.src = url;
-        avatarEl.alt = profile.avatar_selection;
+        avatarEl.alt = (profile.username || 'Member') + "'s avatar";
         if (profile.avatar_selection === 'chef-hat') {
           avatarEl.style.objectFit      = 'contain';
           avatarEl.style.objectPosition = 'center center';
