@@ -273,6 +273,7 @@ window.addEventListener('load', function() {
       if (hasPhoto && img) {
         img.src = recipe.photo_url;
         img.srcset = '';
+        img.alt = 'Note photo for this recipe';
         if (mediaContainer) mediaContainer.style.display = '';
       } else if (img) {
         img.removeAttribute('src');
