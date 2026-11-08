@@ -989,6 +989,7 @@ window.addEventListener('load', function () {
         mediaImg.removeAttribute('srcset');
         mediaImg.removeAttribute('sizes');
         mediaImg.src = note.photo_url;
+        mediaImg.alt = 'Note photo for ' + (note.tried_it_on || 'this recipe');
       }
       if (mediaEl) mediaEl.style.removeProperty('display');
     } else {
