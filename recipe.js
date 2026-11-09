@@ -1007,7 +1007,7 @@ window.addEventListener('load', function () {
         editLinkEl.style.cursor = 'pointer';
         editLinkEl.style.removeProperty('display');
         editLinkEl.addEventListener('click', function () {
-          window.location.href = 'https://sauce-share-4c2702.webflow.io/edit-note?type=community&id=' + note.id;
+          window.location.href = 'https://sauceshare.com/edit-note?type=community&id=' + note.id;
         });
       } else {
         editLinkEl.style.setProperty('display', 'none', 'important');
@@ -1076,7 +1076,7 @@ window.addEventListener('load', function () {
 
   async function toggleFavorite() {
     if (!_session) {
-      window.location.href = 'https://sauce-share-4c2702.webflow.io/sign-up';
+      window.location.href = 'https://sauceshare.com/sign-up';
       return;
     }
     if (_busy || !_recipeId) return;
@@ -1121,7 +1121,7 @@ window.addEventListener('load', function () {
         editBtn.style.setProperty('display', 'flex', 'important');
         editBtn.style.cursor = 'pointer';
         editBtn.addEventListener('click', function() {
-          window.location.href = 'https://sauce-share-4c2702.webflow.io/edit-recipe?slug=' + (recipe.slug || '');
+          window.location.href = 'https://sauceshare.com/edit-recipe?slug=' + (recipe.slug || '');
         });
       }
     } else {
