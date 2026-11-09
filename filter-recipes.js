@@ -153,7 +153,9 @@ document.addEventListener('click', function(e) {
     'opacity:0',
     'transition:opacity 0.3s ease',
     'pointer-events:none',
-    'white-space:nowrap'
+    'white-space:normal',
+    'max-width:min(400px,calc(100vw - 48px))',
+    'text-align:center'
   ].join(';');
   document.body.appendChild(toast);
   requestAnimationFrame(function() {
@@ -1095,7 +1097,9 @@ window.addEventListener('load', function() {
       'opacity:0',
       'transition:opacity 0.3s ease',
       'pointer-events:none',
-      'white-space:nowrap'
+      'white-space:normal',
+      'max-width:min(400px,calc(100vw - 48px))',
+      'text-align:center'
     ].join(';');
     document.body.appendChild(toast);
     requestAnimationFrame(function() {
@@ -1399,7 +1403,7 @@ window.addEventListener('load', function() {
       if (customCheck && customCheck.classList.contains('w-checkbox-input')) {
         customCheck.classList.remove('w--redirected-checked');
       }
-      showFilterCardToast('Log in or become a member to filter by your recipes, favorites, and notes.');
+      showFilterCardToast('Sign in to filter by your recipes, favorites, and notes.');
 
       setEmptyStates(true, false);
       if (window.Wized && Wized.data && Wized.data.v) {
@@ -1501,7 +1505,9 @@ window.addEventListener('load', function() {
       'opacity: 0',
       'transition: opacity 0.3s ease',
       'pointer-events: none',
-      'white-space: nowrap'
+      'white-space: normal',
+      'max-width: min(400px, calc(100vw - 48px))',
+      'text-align: center'
     ].join(';');
 
     document.body.appendChild(toast);
@@ -1600,7 +1606,7 @@ window.addEventListener('load', function() {
     var wrapper = e.target.closest('[wized="card-favorite-wrapper"]');
     if (!wrapper) return;
     if (!_session) {
-      showToast('Log in or become a member to save your favorite recipes.');
+      showToast('Sign in to save your favorite recipes.');
       return;
     }
     var card     = wrapper.closest('.recipe-card');
