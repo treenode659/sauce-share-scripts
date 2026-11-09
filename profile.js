@@ -1032,7 +1032,7 @@ window.addEventListener('load', async function() {
         editLink.style.cursor = 'pointer';
         editLink.style.setProperty('display', 'flex', 'important');
         editLink.addEventListener('click', function() {
-          window.location.href = 'https://sauce-share-4c2702.webflow.io/edit-note?type=pinned&id=' + recipe.id;
+          window.location.href = 'https://sauceshare.com/edit-note?type=pinned&id=' + recipe.id;
         });
       } else {
         editLink.style.setProperty('display', 'none', 'important');
@@ -1139,7 +1139,7 @@ window.addEventListener('load', async function() {
           editLink.style.cursor = 'pointer';
           editLink.style.setProperty('display', 'flex', 'important');
           editLink.addEventListener('click', function() {
-            window.location.href = 'https://sauce-share-4c2702.webflow.io/edit-note?type=community&id=' + note.id;
+            window.location.href = 'https://sauceshare.com/edit-note?type=community&id=' + note.id;
           });
         }
         if (usernameEl) usernameEl.style.setProperty('display', 'none', 'important');
@@ -1296,7 +1296,7 @@ window.addEventListener('load', async function() {
       title.textContent = recipe.recipe_title || '';
       title.style.cursor = 'pointer';
       title.addEventListener('click', function() {
-        window.location.href = 'https://sauce-share-4c2702.webflow.io/recipe?slug=' + (recipe.slug || '');
+        window.location.href = 'https://sauceshare.com/recipe?slug=' + (recipe.slug || '');
       });
     }
     if (base)   base.textContent   = toTitleCase(recipe.base_pairing || '');
@@ -1321,7 +1321,7 @@ window.addEventListener('load', async function() {
         editBtn.style.cursor = 'pointer';
         editBtn.style.setProperty('display', 'flex', 'important');
         editBtn.addEventListener('click', function() {
-          window.location.href = 'https://sauce-share-4c2702.webflow.io/edit-recipe?slug=' + (recipe.slug || '');
+          window.location.href = 'https://sauceshare.com/edit-recipe?slug=' + (recipe.slug || '');
         });
       } else {
         editBtn.style.setProperty('display', 'none', 'important');
@@ -1737,7 +1737,7 @@ window.addEventListener('load', async function() {
         title.textContent = recipe.recipe_title || '';
         title.style.cursor = 'pointer';
         title.addEventListener('click', function() {
-          window.location.href = 'https://sauce-share-4c2702.webflow.io/recipe?slug=' + (recipe.slug || '');
+          window.location.href = 'https://sauceshare.com/recipe?slug=' + (recipe.slug || '');
         });
       }
       if (base)   base.textContent   = toTitleCase(recipe.base_pairing || '');
@@ -1756,7 +1756,7 @@ window.addEventListener('load', async function() {
       if (editBtn) {
         editBtn.style.cursor = 'pointer';
         editBtn.addEventListener('click', function() {
-          window.location.href = 'https://sauce-share-4c2702.webflow.io/edit-recipe?slug=' + (recipe.slug || '');
+          window.location.href = 'https://sauceshare.com/edit-recipe?slug=' + (recipe.slug || '');
         });
       }
 
@@ -2070,7 +2070,7 @@ window.addEventListener('load', async function() {
   try {
     var { data: sessionData } = await _supabase.auth.getSession();
     var session = sessionData?.session;
-    if (!session) { window.location.href = 'https://sauce-share-4c2702.webflow.io/sign-up'; return; }
+    if (!session) { window.location.href = 'https://sauceshare.com/sign-up'; return; }
 
     var { data: profile, error } = await _supabase
       .from('profiles')
