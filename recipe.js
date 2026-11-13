@@ -1710,7 +1710,7 @@ window.addEventListener('load', function() {
     var directions  = Array.isArray(recipe.directions)  ? recipe.directions  : [];
 
     // Pick best image: header recraft > photo_url > header_image
-    var image = recipe.recipe_header_recraft || recipe.photo_url || recipe.header_image || null;
+    var image = recipe.recipe_header_recraft || recipe.header_image || null;
 
     var schema = {
       "@context": "https://schema.org",
