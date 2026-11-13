@@ -1748,6 +1748,7 @@ window.addEventListener('load', function() {
     }
 
     if (cuisines.length) schema.recipeCuisine = cuisines.join(', ');
+    if (recipe.base_pairing) schema.recipeCategory = recipe.base_pairing;
 
     if (recipe.profiles?.username) {
       schema.author = { "@type": "Person", "name": recipe.profiles.username };
