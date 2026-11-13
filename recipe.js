@@ -1691,3 +1691,82 @@ window.addEventListener('load', function() {
   setTimeout(function() { clearInterval(checkReady); }, 10000);
 
 });
+// ============================================
+// JSON-LD RECIPE SCHEMA
+// ============================================
+window.addEventListener('load', function() {
+
+  function injectRecipeSchema(recipe) {
+    if (document.querySelector('script[data-schema="recipe"]')) return;
+
+    var title       = recipe.recipe_title;
+    var description = recipe.recipe_blurb   || '';
+    var prepTime    = recipe.prep_time       || '';
+    var servings    = recipe.servings        || '';
+    var createdAt   = recipe.created_at      || '';
+    var slug        = recipe.slug            || window.location.pathname.split('/').filter(Boolean).pop();
+    var cuisines    = Array.isArray(recipe.cuisines)    ? recipe.cuisines    : [];
+    var ingredients = Array.isArray(recipe.ingredients) ? recipe.ingredients : [];
+    var directions  = Array.isArray(recipe.directions)  ? recipe.directions  : [];
+
+    // Pick best image: header recraft > photo_url > header_image
+    var image = recipe.recipe_header_recraft || recipe.photo_url || recipe.header_image || null;
+
+    var schema = {
+      "@context": "https://schema.org",
+      "@type":    "Recipe",
+      "name":     title,
+      "url":      "https://sauceshare.com/recipes?slug=" + encodeURIComponent(slug)
+    };
+
+    if (description) schema.description = description;
+    if (image)       schema.image = [image];
+    if (createdAt)   schema.datePublished = createdAt.split('T')[0];
+    if (servings)    schema.recipeYield = String(servings) + ' servings';
+
+    if (prepTime) {
+      // Normalize: "30 min" → "PT30M", "1 hr" → "PT1H", "1 hour 30 min" → "PT1H30M"
+      var ptStr = String(prepTime).toUpperCase()
+        .replace(/\s*(HOURS?|HRS?)\s*/g, 'H')
+        .replace(/\s*(MINUTES?|MINS?)\s*/g, 'M')
+        .replace(/\s/g, '');
+      if (ptStr && !ptStr.startsWith('PT')) ptStr = 'PT' + ptStr;
+      if (/^PT[\dHM]+$/.test(ptStr)) schema.prepTime = ptStr;
+    }
+
+    if (ingredients.length) {
+      schema.recipeIngredient = ingredients.map(function(i) {
+        return typeof i === 'string' ? i : (i.text || i.name || String(i));
+      });
+    }
+
+    if (directions.length) {
+      schema.recipeInstructions = directions.map(function(d, idx) {
+        var text = typeof d === 'string' ? d : (d.text || d.step || d.description || String(d));
+        return { "@type": "HowToStep", "position": idx + 1, "text": text };
+      });
+    }
+
+    if (cuisines.length) schema.recipeCuisine = cuisines.join(', ');
+
+    if (recipe.profiles?.username) {
+      schema.author = { "@type": "Person", "name": recipe.profiles.username };
+    }
+
+    var el = document.createElement('script');
+    el.type = 'application/ld+json';
+    el.setAttribute('data-schema', 'recipe');
+    el.textContent = JSON.stringify(schema, null, 2);
+    document.head.appendChild(el);
+  }
+
+  var checkData = setInterval(function() {
+    var recipe = window.Wized?.data?.r?.get_recipe?.data?.[0];
+    if (!recipe || !recipe.recipe_title) return;
+    clearInterval(checkData);
+    injectRecipeSchema(recipe);
+  }, 200);
+
+  setTimeout(function() { clearInterval(checkData); }, 10000);
+
+});
